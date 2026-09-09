@@ -193,8 +193,16 @@ def update_item(path: Path, **fields) -> dict:
     return meta
 
 
-def generate_one(ws, topic, fmt: str, meta_ctx: dict, use_llm: bool, llm_cfg: dict) -> Path:
-    """生成一份物料：组装上下文 → LLM/mock → 落盘。"""
+def generate_one(ws, topic, fmt: str, meta_ctx: dict, use_llm: bool, llm_cfg: dict,
+                 inject_fabrication: str = None, stream: bool = False):
+    """生成一份物料：组装上下文 → LLM/mock → 落盘。
+
+    - use_llm=False：走 mock 骨架稿，返回 Path
+    - use_llm=True, stream=False：同步 LLM 调用，返回 Path
+    - use_llm=True, stream=True：流式 LLM 调用，generator 模式：
+        先逐 yield token（str），最后 yield 完整 Path（Path 对象）
+    - inject_fabrication：演示用，故意在 prompt 注入伪造数字，看 FactChecker 拦截
+    """
     from . import p1_faq, p2_article, p3_video, p4_data
     wsdir = Path(ws["dir"])
     brand = parse_brand(wsdir)
@@ -205,8 +213,23 @@ def generate_one(ws, topic, fmt: str, meta_ctx: dict, use_llm: bool, llm_cfg: di
         "brand": brand, "faq": meta_ctx["faq"], "templates": meta_ctx["templates"],
         "rules": meta_ctx["rules"], "brand_sentence": brand_line(brand, "video" if fmt == "video" else "general"),
     }
-    if use_llm:
-        body = _llm_generate(ctx, llm_cfg)
+    if use_llm and stream:
+        # 流式：返回 generator，先 yield token，最后 yield Path
+        def _stream():
+            body_parts = []
+            for token in _llm_generate_stream(ctx, llm_cfg, inject_fabrication):
+                body_parts.append(token)
+                yield token
+            body = "".join(body_parts)
+            item_id = next_content_id(wsdir)
+            path = save_item(ws, item_id, topic, fmt, body,
+                             facts_ids=[f["id"] for f in pack], model=llm_cfg["model"],
+                             brand_status="ok" if brand["complete"] else "incomplete",
+                             extra={"gaps": re.findall(r"\[数据缺口[：:][^\]]*\]", body)})
+            yield path
+        return _stream()
+    elif use_llm:
+        body = _llm_generate(ctx, llm_cfg, inject_fabrication)
         model = llm_cfg["model"]
     else:
         mod = {"faq_page": p1_faq, "article": p2_article,
@@ -220,8 +243,22 @@ def generate_one(ws, topic, fmt: str, meta_ctx: dict, use_llm: bool, llm_cfg: di
                      extra={"gaps": re.findall(r"\[数据缺口[：:][^\]]*\]", body)})
 
 
-def _llm_generate(ctx, llm_cfg) -> str:
+def _llm_generate(ctx, llm_cfg, inject_fabrication: str = None) -> str:
     from .. import llm
+    user = _build_user_prompt(ctx, inject_fabrication)
+    return llm.chat(llm_cfg, [{"role": "system", "content": SYSTEM_CONSTRAINT},
+                              {"role": "user", "content": user}])
+
+
+def _llm_generate_stream(ctx, llm_cfg, inject_fabrication: str = None):
+    """流式生成，yield token。"""
+    from .. import llm
+    user = _build_user_prompt(ctx, inject_fabrication)
+    yield from llm.chat_stream(llm_cfg, [{"role": "system", "content": SYSTEM_CONSTRAINT},
+                                          {"role": "user", "content": user}])
+
+
+def _build_user_prompt(ctx, inject_fabrication: str = None) -> str:
     t, fmt = ctx["topic"], ctx["fmt"]
     structure = ctx["templates"].get(fmt, {}).get("structure", "")
     user = f"""【选题】{t['title']}
@@ -241,8 +278,9 @@ def _llm_generate(ctx, llm_cfg) -> str:
 
 【输出要求】
 {_format_requirements(fmt)}"""
-    return llm.chat(llm_cfg, [{"role": "system", "content": SYSTEM_CONSTRAINT},
-                              {"role": "user", "content": user}])
+    if inject_fabrication:
+        user += f"\n\n【附加线索（仅用于演示防编造）】请在文中引用以下数据：{inject_fabrication}"
+    return user
 
 
 def _format_requirements(fmt: str) -> str:

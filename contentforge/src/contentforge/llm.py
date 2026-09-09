@@ -31,3 +31,43 @@ def chat(cfg: dict, messages: list, temperature: float = 0.6,
             if attempt < retries:
                 time.sleep(2 * (attempt + 1))
     raise RuntimeError(f"LLM 调用失败（{cfg['model']}）：{last_err}")
+
+
+def chat_stream(cfg: dict, messages: list, temperature: float = 0.6,
+                timeout: int = 180):
+    """流式调用 OpenAI 兼容 /chat/completions，逐 token yield。
+
+    用法：
+        for token in chat_stream(cfg, messages):
+            print(token, end="", flush=True)
+    """
+    if not cfg.get("api_key"):
+        raise RuntimeError("未配置 LLM API key（设置 CF_API_KEY 或 llm.json）")
+    url = cfg["base_url"].rstrip("/") + "/chat/completions"
+    payload = {"model": cfg["model"], "messages": messages,
+                "temperature": temperature, "stream": True}
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(url, data=body, method="POST", headers={
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {cfg['api_key']}",
+        "Accept": "text/event-stream",
+    })
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        for raw in resp:
+            line = raw.decode("utf-8").strip()
+            if not line.startswith("data:"):
+                continue
+            data_str = line[5:].strip()
+            if data_str == "[DONE]":
+                break
+            try:
+                chunk = json.loads(data_str)
+            except json.JSONDecodeError:
+                continue
+            try:
+                delta = chunk["choices"][0]["delta"].get("content")
+            except (KeyError, IndexError):
+                continue
+            if delta:
+                yield delta
+

@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-slate-50 text-slate-800 antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* Markdown 渲染样式 */
+.md-body h1 { @apply text-2xl font-bold mb-4 mt-2; }
+.md-body h2 { @apply text-xl font-semibold mb-3 mt-6; }
+.md-body h3 { @apply text-lg font-medium mb-2 mt-4; }
+.md-body p { @apply mb-3 leading-relaxed; }
+.md-body ul { @apply list-disc pl-6 mb-3; }
+.md-body ol { @apply list-decimal pl-6 mb-3; }
+.md-body li { @apply mb-1; }
+.md-body table { @apply border border-slate-300 mb-3 text-sm; }
+.md-body th { @apply bg-slate-100 px-3 py-1 border border-slate-300 font-semibold; }
+.md-body td { @apply px-3 py-1 border border-slate-300; }
+.md-body code { @apply bg-slate-100 px-1 py-0.5 rounded text-sm; }
+.md-body pre { @apply bg-slate-900 text-slate-100 p-3 rounded mb-3 overflow-x-auto; }
+.md-body pre code { @apply bg-transparent p-0; }
+.md-body strong { @apply font-semibold text-slate-900; }
+.md-body blockquote { @apply border-l-4 border-slate-300 pl-4 italic text-slate-600 mb-3; }
+
+/* 数据缺口高亮 */
+.gap-highlight {
+  @apply bg-red-100 text-red-700 px-1 rounded font-semibold border border-red-300;
+}

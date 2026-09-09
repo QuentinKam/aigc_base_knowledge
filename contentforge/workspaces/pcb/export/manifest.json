@@ -1,5 +1,5 @@
 {
- "exported_at": "2026-09-05",
+ "exported_at": "2026-09-09",
  "items": [
   {
    "id": "C-0001",
@@ -38,6 +38,324 @@
    "files": [
     "wechat/C-0004.md",
     "site/C-0004.md"
+   ]
+  },
+  {
+   "id": "C-0005",
+   "format": "faq_page",
+   "status": "geo_pass",
+   "files": [
+    "site/C-0005.md",
+    "site/C-0005.jsonld"
+   ]
+  },
+  {
+   "id": "C-0006",
+   "format": "faq_page",
+   "status": "geo_pass",
+   "files": [
+    "site/C-0006.md",
+    "site/C-0006.jsonld"
+   ]
+  },
+  {
+   "id": "C-0007",
+   "format": "faq_page",
+   "status": "geo_pass",
+   "files": [
+    "site/C-0007.md",
+    "site/C-0007.jsonld"
+   ]
+  },
+  {
+   "id": "C-0008",
+   "format": "faq_page",
+   "status": "geo_pass",
+   "files": [
+    "site/C-0008.md",
+    "site/C-0008.jsonld"
+   ]
+  },
+  {
+   "id": "C-0009",
+   "format": "faq_page",
+   "status": "geo_pass",
+   "files": [
+    "site/C-0009.md",
+    "site/C-0009.jsonld"
+   ]
+  },
+  {
+   "id": "C-0010",
+   "format": "faq_page",
+   "status": "geo_pass",
+   "files": [
+    "site/C-0010.md",
+    "site/C-0010.jsonld"
+   ]
+  },
+  {
+   "id": "C-0011",
+   "format": "article",
+   "status": "generated",
+   "files": [
+    "zhihu/C-0011.md",
+    "wechat/C-0011.md"
+   ]
+  },
+  {
+   "id": "C-0012",
+   "format": "video",
+   "status": "generated",
+   "files": [
+    "douyin/C-0012-kit/口播稿.md",
+    "douyin/C-0012-kit/分镜表.md",
+    "douyin/C-0012-kit/发布文案.md",
+    "douyin/C-0012-kit/钩子备选.md",
+    "douyin/C-0012-kit/完整物料包.md"
+   ]
+  },
+  {
+   "id": "C-0013",
+   "format": "article",
+   "status": "generated",
+   "files": [
+    "zhihu/C-0013.md",
+    "wechat/C-0013.md"
+   ]
+  },
+  {
+   "id": "C-0014",
+   "format": "video",
+   "status": "generated",
+   "files": [
+    "douyin/C-0014-kit/口播稿.md",
+    "douyin/C-0014-kit/分镜表.md",
+    "douyin/C-0014-kit/发布文案.md",
+    "douyin/C-0014-kit/钩子备选.md",
+    "douyin/C-0014-kit/完整物料包.md"
+   ]
+  },
+  {
+   "id": "C-0015",
+   "format": "faq_page",
+   "status": "geo_pass",
+   "files": [
+    "site/C-0015.md",
+    "site/C-0015.jsonld"
+   ]
+  },
+  {
+   "id": "C-0016",
+   "format": "article",
+   "status": "fact_pass",
+   "files": [
+    "zhihu/C-0016.md",
+    "wechat/C-0016.md"
+   ]
+  },
+  {
+   "id": "C-0017",
+   "format": "video",
+   "status": "geo_pass",
+   "files": [
+    "douyin/C-0017-kit/口播稿.md",
+    "douyin/C-0017-kit/分镜表.md",
+    "douyin/C-0017-kit/发布文案.md",
+    "douyin/C-0017-kit/钩子备选.md",
+    "douyin/C-0017-kit/完整物料包.md"
+   ]
+  },
+  {
+   "id": "C-0018",
+   "format": "article",
+   "status": "fact_pass",
+   "files": [
+    "zhihu/C-0018.md",
+    "wechat/C-0018.md"
+   ]
+  },
+  {
+   "id": "C-0019",
+   "format": "video",
+   "status": "geo_pass",
+   "files": [
+    "douyin/C-0019-kit/口播稿.md",
+    "douyin/C-0019-kit/分镜表.md",
+    "douyin/C-0019-kit/发布文案.md",
+    "douyin/C-0019-kit/钩子备选.md",
+    "douyin/C-0019-kit/完整物料包.md"
+   ]
+  },
+  {
+   "id": "C-0020",
+   "format": "faq_page",
+   "status": "geo_pass",
+   "files": [
+    "site/C-0020.md",
+    "site/C-0020.jsonld"
+   ]
+  },
+  {
+   "id": "C-0021",
+   "format": "faq_page",
+   "status": "geo_pass",
+   "files": [
+    "site/C-0021.md",
+    "site/C-0021.jsonld"
+   ]
+  },
+  {
+   "id": "C-0022",
+   "format": "article",
+   "status": "fact_pass",
+   "files": [
+    "zhihu/C-0022.md",
+    "wechat/C-0022.md"
+   ]
+  },
+  {
+   "id": "C-0023",
+   "format": "video",
+   "status": "geo_pass",
+   "files": [
+    "douyin/C-0023-kit/口播稿.md",
+    "douyin/C-0023-kit/分镜表.md",
+    "douyin/C-0023-kit/发布文案.md",
+    "douyin/C-0023-kit/钩子备选.md",
+    "douyin/C-0023-kit/完整物料包.md"
+   ]
+  },
+  {
+   "id": "C-0024",
+   "format": "data_article",
+   "status": "geo_pass",
+   "files": [
+    "wechat/C-0024.md",
+    "site/C-0024.md"
+   ]
+  },
+  {
+   "id": "C-0025",
+   "format": "faq_page",
+   "status": "geo_pass",
+   "files": [
+    "site/C-0025.md",
+    "site/C-0025.jsonld"
+   ]
+  },
+  {
+   "id": "C-0026",
+   "format": "article",
+   "status": "geo_pass",
+   "files": [
+    "zhihu/C-0026.md",
+    "wechat/C-0026.md"
+   ]
+  },
+  {
+   "id": "C-0027",
+   "format": "article",
+   "status": "generated",
+   "files": [
+    "zhihu/C-0027.md",
+    "wechat/C-0027.md"
+   ]
+  },
+  {
+   "id": "C-0028",
+   "format": "video",
+   "status": "generated",
+   "files": [
+    "douyin/C-0028-kit/口播稿.md",
+    "douyin/C-0028-kit/分镜表.md",
+    "douyin/C-0028-kit/发布文案.md",
+    "douyin/C-0028-kit/钩子备选.md",
+    "douyin/C-0028-kit/完整物料包.md"
+   ]
+  },
+  {
+   "id": "C-0029",
+   "format": "article",
+   "status": "generated",
+   "files": [
+    "zhihu/C-0029.md",
+    "wechat/C-0029.md"
+   ]
+  },
+  {
+   "id": "C-0030",
+   "format": "video",
+   "status": "generated",
+   "files": [
+    "douyin/C-0030-kit/口播稿.md",
+    "douyin/C-0030-kit/分镜表.md",
+    "douyin/C-0030-kit/发布文案.md",
+    "douyin/C-0030-kit/钩子备选.md",
+    "douyin/C-0030-kit/完整物料包.md"
+   ]
+  },
+  {
+   "id": "C-0031",
+   "format": "article",
+   "status": "generated",
+   "files": [
+    "zhihu/C-0031.md",
+    "wechat/C-0031.md"
+   ]
+  },
+  {
+   "id": "C-0032",
+   "format": "video",
+   "status": "generated",
+   "files": [
+    "douyin/C-0032-kit/口播稿.md",
+    "douyin/C-0032-kit/分镜表.md",
+    "douyin/C-0032-kit/发布文案.md",
+    "douyin/C-0032-kit/钩子备选.md",
+    "douyin/C-0032-kit/完整物料包.md"
+   ]
+  },
+  {
+   "id": "C-0033",
+   "format": "article",
+   "status": "generated",
+   "files": [
+    "zhihu/C-0033.md",
+    "wechat/C-0033.md"
+   ]
+  },
+  {
+   "id": "C-0034",
+   "format": "video",
+   "status": "generated",
+   "files": [
+    "douyin/C-0034-kit/口播稿.md",
+    "douyin/C-0034-kit/分镜表.md",
+    "douyin/C-0034-kit/发布文案.md",
+    "douyin/C-0034-kit/钩子备选.md",
+    "douyin/C-0034-kit/完整物料包.md"
+   ]
+  },
+  {
+   "id": "C-0035",
+   "format": "article",
+   "status": "generated",
+   "files": [
+    "zhihu/C-0035.md",
+    "wechat/C-0035.md"
+   ]
+  },
+  {
+   "id": "C-0036",
+   "format": "video",
+   "status": "generated",
+   "files": [
+    "douyin/C-0036-kit/口播稿.md",
+    "douyin/C-0036-kit/分镜表.md",
+    "douyin/C-0036-kit/发布文案.md",
+    "douyin/C-0036-kit/钩子备选.md",
+    "douyin/C-0036-kit/完整物料包.md"
    ]
   }
  ]
