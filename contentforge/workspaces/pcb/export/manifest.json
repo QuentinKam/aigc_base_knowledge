@@ -1,0 +1,44 @@
+{
+ "exported_at": "2026-09-05",
+ "items": [
+  {
+   "id": "C-0001",
+   "format": "faq_page",
+   "status": "approved",
+   "files": [
+    "site/C-0001.md",
+    "site/C-0001.jsonld"
+   ]
+  },
+  {
+   "id": "C-0002",
+   "format": "article",
+   "status": "approved",
+   "files": [
+    "zhihu/C-0002.md",
+    "wechat/C-0002.md"
+   ]
+  },
+  {
+   "id": "C-0003",
+   "format": "video",
+   "status": "approved",
+   "files": [
+    "douyin/C-0003-kit/口播稿.md",
+    "douyin/C-0003-kit/分镜表.md",
+    "douyin/C-0003-kit/发布文案.md",
+    "douyin/C-0003-kit/钩子备选.md",
+    "douyin/C-0003-kit/完整物料包.md"
+   ]
+  },
+  {
+   "id": "C-0004",
+   "format": "data_article",
+   "status": "approved",
+   "files": [
+    "wechat/C-0004.md",
+    "site/C-0004.md"
+   ]
+  }
+ ]
+}

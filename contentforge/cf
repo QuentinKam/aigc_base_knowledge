@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# ContentForge 启动器：./cf <command> ...
+exec python3 "$(dirname "$0")/src/main.py" "$@"

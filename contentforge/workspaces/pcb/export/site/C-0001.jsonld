@@ -1,0 +1,14 @@
+{
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "mainEntity": [
+  {
+   "@type": "Question",
+   "name": "PCB 打样一般多少钱、多久交货？",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "普通双面板/4层板打样（10片内）行业普遍在几十到几百元档，常规交期3-7天，加急可24-48小时。（来源：高频问答库）"
+   }
+  }
+ ]
+}

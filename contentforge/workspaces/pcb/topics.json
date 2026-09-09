@@ -1,0 +1,528 @@
+{
+ "generated_at": "2026-09-05",
+ "topics": [
+  {
+   "id": "T-001",
+   "title": "PCB 的 12 种类型一次讲清（图文/短视频）",
+   "pillar": "trust",
+   "kb_refs": [
+    "01",
+    "PCB类型与板材"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "PCB 的 12 种类型一次讲清（图文/短视频）",
+   "status": "ready"
+  },
+  {
+   "id": "T-002",
+   "title": "一块多层板是怎么造出来的：13 道工序拆解",
+   "pillar": "trust",
+   "kb_refs": [
+    "01",
+    "制造工艺流程"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "一块多层板是怎么造出来的：13 道工序拆解",
+   "status": "ready"
+  },
+  {
+   "id": "T-003",
+   "title": "HDI 板为什么贵？激光孔、盲埋孔、mSAP 通俗解释",
+   "pillar": "trust",
+   "kb_refs": [
+    "01"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "HDI 板为什么贵？激光孔、盲埋孔、mSAP 通俗解释",
+   "status": "ready"
+  },
+  {
+   "id": "T-004",
+   "title": "高 Tg 板材到底高在哪？汽车电子为什么必须用",
+   "pillar": "trust",
+   "kb_refs": [
+    "01"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "高 Tg 板材到底高在哪？汽车电子为什么必须用",
+   "status": "ready"
+  },
+  {
+   "id": "T-005",
+   "title": "FPC、刚挠结合板、连接器线缆方案三种互连对比",
+   "pillar": "trust",
+   "kb_refs": [
+    "01"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FPC、刚挠结合板、连接器线缆方案三种互连对比",
+   "status": "ready"
+  },
+  {
+   "id": "T-006",
+   "title": "851 亿美元：2025 年全球 PCB 市场盘点",
+   "pillar": "insight",
+   "kb_refs": [
+    "02（引用 Prismark 数据）"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "851 亿美元：2025 年全球 PCB 市场盘点",
+   "status": "ready"
+  },
+  {
+   "id": "T-007",
+   "title": "AI 服务器凭什么让 PCB 单板价值翻 3 倍",
+   "pillar": "insight",
+   "kb_refs": [
+    "02"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "AI 服务器凭什么让 PCB 单板价值翻 3 倍",
+   "status": "ready"
+  },
+  {
+   "id": "T-008",
+   "title": "中国 PCB 占全球 56% 之后，下一步拼什么？（高阶 HDI 与载板追赶）",
+   "pillar": "insight",
+   "kb_refs": [
+    "02"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "中国 PCB 占全球 56% 之后，下一步拼什么？（高阶 HDI 与载板追赶）",
+   "status": "ready"
+  },
+  {
+   "id": "T-009",
+   "title": "PCB 2025-2031 复合增长率解读：哪些细分跑赢大盘",
+   "pillar": "insight",
+   "kb_refs": [
+    "02"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "PCB 2025-2031 复合增长率解读：哪些细分跑赢大盘",
+   "status": "ready"
+  },
+  {
+   "id": "T-010",
+   "title": "PCB 打样报价为什么从 50 到 5000 都有？7 个变量拆解",
+   "pillar": "decision",
+   "kb_refs": [
+    "03"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "PCB 打样报价为什么从 50 到 5000 都有？7 个变量拆解",
+   "status": "ready"
+  },
+  {
+   "id": "T-011",
+   "title": "低价 PCB 板的 5 个隐性坑（降级基材、省检测…）",
+   "pillar": "decision",
+   "kb_refs": [
+    "03"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "低价 PCB 板的 5 个隐性坑（降级基材、省检测…）",
+   "status": "ready"
+  },
+  {
+   "id": "T-012",
+   "title": "选 PCB 厂家的五维评估法：交期/价格/品质/服务/口碑",
+   "pillar": "decision",
+   "kb_refs": [
+    "03"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "选 PCB 厂家的五维评估法：交期/价格/品质/服务/口碑",
+   "status": "ready"
+  },
+  {
+   "id": "T-013",
+   "title": "车载 PCB 和普通 PCB 采购有什么不一样",
+   "pillar": "decision",
+   "kb_refs": [
+    "03"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "车载 PCB 和普通 PCB 采购有什么不一样",
+   "status": "ready"
+  },
+  {
+   "id": "T-014",
+   "title": "打样",
+   "pillar": "decision",
+   "kb_refs": [
+    "小批量 → 量产，各阶段怎么换供应商不掉坑 → 03"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "打样",
+   "status": "ready"
+  },
+  {
+   "id": "T-015",
+   "title": "采购合同必须写进这 3 条质量条款",
+   "pillar": "decision",
+   "kb_refs": [
+    "03",
+    "质量标准"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "采购合同必须写进这 3 条质量条款",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q01",
+   "title": "什么是 PCB？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q1",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q1 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q02",
+   "title": "PCB 有哪些类型？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q2",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q2 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q03",
+   "title": "HDI 板和普通 PCB 的区别是什么？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q3",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q3 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q04",
+   "title": "FPC 和刚性板怎么选？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q4",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q4 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q05",
+   "title": "高频 PCB 用什么板材？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q5",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q5 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q06",
+   "title": "FR-4 的 Tg 是什么意思，怎么选？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q6",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q6 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q07",
+   "title": "PCB 表面处理工艺怎么选？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q7",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q7 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q08",
+   "title": "PCB 打样一般多少钱、多久交货？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q8",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q8 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q09",
+   "title": "PCB 报价为什么差很多？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q9",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q9 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q10",
+   "title": "怎么判断 PCB 厂家好不好？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q10",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q10 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q11",
+   "title": "PCB 采购合同里应该约定哪些质量条款？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q11",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q11 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q12",
+   "title": "2025 年全球 PCB 市场规模是多少？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q12",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q12 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-Q13",
+   "title": "AI 对 PCB 行业有什么影响？",
+   "pillar": "faq",
+   "kb_refs": [
+    "04_"
+   ],
+   "faq_ref": "Q13",
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "FAQ Q13 改写多平台版本",
+   "status": "ready"
+  },
+  {
+   "id": "T-016",
+   "title": "\"PCB 上过回流焊就翘板，怎么回事？\"等故障场景问答（需补充品牌技术案例）",
+   "pillar": "faq",
+   "kb_refs": [
+    "05_内容生产"
+   ],
+   "faq_ref": null,
+   "audience": "采购/研发工程师",
+   "platforms": [
+    "site",
+    "zhihu",
+    "douyin"
+   ],
+   "angle": "\"PCB 上过回流焊就翘板，怎么回事？\"等故障场景问答（需补充品牌技术案例）",
+   "status": "ready"
+  }
+ ],
+ "platforms_config": [
+  {
+   "platform": "知乎",
+   "format": "长文+问答",
+   "note": "支柱①③④，问题标题直接用 FAQ 原句"
+  },
+  {
+   "platform": "公众号",
+   "format": "深度图文",
+   "note": "支柱②③，带数据图表"
+  },
+  {
+   "platform": "抖音/视频号",
+   "format": "口播 60-90s",
+   "note": "每条只讲一个知识点，开头 3 秒抛问题"
+  },
+  {
+   "platform": "官网博客",
+   "format": "结构化 FAQ 页",
+   "note": "GEO 主战场：Q&A 结构 + schema 标记"
+  },
+  {
+   "platform": "LinkedIn/领英",
+   "format": "英文编译",
+   "note": "支柱②数据观点出海"
+  }
+ ]
+}
