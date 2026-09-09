@@ -1,0 +1,37 @@
+{
+ "generated_at": "2026-09-09",
+ "kb_path": "/Users/quentingam/Documents/pcb_knowledge_base",
+ "diff": {
+  "files": {
+   "added": [],
+   "modified": [],
+   "removed": []
+  },
+  "facts": {
+   "total": 59,
+   "new": 0,
+   "new_ids": [],
+   "superseded": 0
+  },
+  "topics": {
+   "total": 29,
+   "new": 0,
+   "new_ids": [],
+   "superseded": 0
+  },
+  "affected_items": []
+ },
+ "counts": {
+  "files": 12,
+  "facts": 59,
+  "faq": 13,
+  "topics": 29,
+  "templates": [
+   "faq_page",
+   "article",
+   "video",
+   "data_article"
+  ],
+  "rules": true
+ }
+}

@@ -47,8 +47,11 @@ def build_check_index(ws) -> dict:
 
 
 def facts_for_kb_refs(facts: list, kb_refs: list) -> list:
+    """按选题 kb_refs 选事实。跳过 superseded 事实（旧值不应进入新生成的事实包）。"""
     out = []
     for f in facts:
+        if f.get("superseded_at"):
+            continue   # 旧值不参与新生成，但仍在 facts.json 供历史物料追溯
         kbfile = f["kb_ref"].split(":")[0]
         for ref in kb_refs or []:
             if kbfile.startswith(ref) or ref in kbfile:

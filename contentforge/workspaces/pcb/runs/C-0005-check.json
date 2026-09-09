@@ -1,0 +1,35 @@
+{
+ "id": "C-0005",
+ "format": "faq_page",
+ "status": "geo_pass",
+ "fact": {
+  "total": 16,
+  "failures": [],
+  "warnings": [],
+  "gaps": [],
+  "matched_ids": [
+   "BRAND",
+   "F-003",
+   "F-005",
+   "F-009",
+   "F-016",
+   "F-018",
+   "F-019",
+   "F-024",
+   "F-026",
+   "F-041",
+   "F-044",
+   "F-054"
+  ]
+ },
+ "geo": {
+  "failures": [],
+  "warnings": [
+   {
+    "rule": "G5",
+    "msg": "品牌档案为示例占位内容，替换前不得对外发布"
+   }
+  ],
+  "density": 8.0
+ }
+}

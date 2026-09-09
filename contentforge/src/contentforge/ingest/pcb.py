@@ -7,8 +7,18 @@ PCB 库适配：目录角色映射 ——
     05_内容生产/内容模板与发布节奏              → 四类模板骨架 + 发布节奏 + 模板事实
     06_GEO优化                                 → 写作规范（GEOChecker 规则来源）
 
+增量 ingest（spec §3 解析失败容忍 + §10 可追溯/幂等）：
+  - 每次全量解析 kb，但 facts.json / topics.json 采用幂等键合并：
+        facts  键 = (kb_ref 文件路径, claim 前 80 字)
+        topics 键 = (title, kb_refs 元组)
+    命中旧记录 → 复用旧 ID，仅更新可变字段（source/year/numbers）；
+    未命中     → 分配新 ID（已用最大 ID +1）。
+    旧有但新解析无的 → 标 superseded_at，不删除（保历史供 front-matter 追溯）。
+  - 每个 kb 文件 sha256 落 kbmeta/file_hashes.json，供 `cf diff` 报告变更。
+
 换行业时复制本文件按新目录名改 DIRS 配置即可（spec §10 可移植性）。
 """
+import hashlib
 import json
 import re
 from datetime import date
@@ -80,6 +90,138 @@ def _dir_of(rel_parts) -> str:
     return rel_parts[0] if rel_parts else ""
 
 
+def _sha256_file(p: Path) -> str:
+    h = hashlib.sha256()
+    with p.open("rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()[:16]
+
+
+def _file_hashes_path(wsdir: Path) -> Path:
+    return wsdir / "kbmeta" / "file_hashes.json"
+
+
+def _load_old(wsdir: Path) -> tuple:
+    """读旧 facts.json / topics.json / file_hashes.json，缺失返回空。"""
+    reg = wsdir / "registry" / "facts.json"
+    old_facts = json.loads(reg.read_text(encoding="utf-8"))["facts"] if reg.exists() else []
+    tp = wsdir / "topics.json"
+    old_topics = json.loads(tp.read_text(encoding="utf-8")).get("topics", []) if tp.exists() else []
+    fh = _file_hashes_path(wsdir)
+    old_hashes = json.loads(fh.read_text(encoding="utf-8")) if fh.exists() else {}
+    return old_facts, old_topics, old_hashes
+
+
+def _fact_key(f: dict) -> tuple:
+    """幂等键：(文件路径部分, claim 前 80 字)。行号不参与键以避免编辑后漂移。"""
+    kb_ref = f.get("kb_ref", "")
+    path_part = kb_ref.split(":")[0] if kb_ref else ""
+    return (path_part, (f.get("claim") or "")[:80])
+
+
+def _topic_key(t: dict) -> tuple:
+    return (t.get("title", ""), tuple(t.get("kb_refs") or []))
+
+
+def _merge_facts(new_facts: list, old_facts: list) -> tuple:
+    """合并新旧事实：复用旧 ID；旧有但 new 无的 → 标 superseded。返回 (merged, new_ids)。"""
+    today = date.today().isoformat()
+    old_by_key = {_fact_key(f): f for f in old_facts}
+    used_ids = set()
+    max_id = 0
+
+    def _id_num(fact_id: str) -> int:
+        m = re.match(r"F-(\d+)", fact_id or "")
+        return int(m.group(1)) if m else 0
+
+    for f in old_facts:
+        n = _id_num(f["id"])
+        if n:
+            used_ids.add(n)
+            if n > max_id:
+                max_id = n
+
+    merged, new_ids = [], []
+    for nf in new_facts:
+        key = _fact_key(nf)
+        if key in old_by_key:
+            of = old_by_key.pop(key)
+            # 复用旧 ID，更新可变字段
+            of.update({
+                "claim": nf["claim"], "source": nf["source"], "year": nf["year"],
+                "cat": nf["cat"], "kb_ref": nf["kb_ref"], "numbers": nf["numbers"],
+            })
+            of.pop("superseded_at", None)
+            of.pop("supersede_reason", None)
+            merged.append(of)
+        else:
+            max_id += 1
+            while max_id in used_ids:
+                max_id += 1
+            used_ids.add(max_id)
+            nf["id"] = f"F-{max_id:03d}"
+            nf["first_seen"] = today
+            merged.append(nf)
+            new_ids.append(nf["id"])
+
+    # 剩余 old_by_key 中的：kb 中已不存在，标 superseded（不删除）
+    for of in old_by_key.values():
+        of["superseded_at"] = today
+        of.setdefault("supersede_reason", "removed_from_kb")
+        merged.append(of)
+
+    return merged, new_ids
+
+
+def _merge_topics(new_topics: list, old_topics: list) -> tuple:
+    """合并选题：复用旧 ID + 给新增选题打 first_seen。返回 (merged, added_ids)。"""
+    today = date.today().isoformat()
+    old_by_key = {_topic_key(t): t for t in old_topics}
+    used_ids = set()
+    max_n = 0
+
+    def _topic_num(tid: str) -> int:
+        m = re.match(r"T-(\d+)", tid or "")
+        return int(m.group(1)) if m else 0
+
+    for t in old_topics:
+        n = _topic_num(t["id"])
+        if n:
+            used_ids.add(n)
+            if n > max_n:
+                max_n = n
+
+    merged, added = [], []
+    for nt in new_topics:
+        key = _topic_key(nt)
+        if key in old_by_key:
+            ot = old_by_key.pop(key)
+            for k in ("pillar", "kb_refs", "faq_ref", "audience",
+                     "platforms", "angle", "status"):
+                if k in nt:
+                    ot[k] = nt[k]
+            ot.pop("superseded_at", None)
+            merged.append(ot)
+        else:
+            max_n += 1
+            while max_n in used_ids:
+                max_n += 1
+            used_ids.add(max_n)
+            nt["id"] = f"T-{max_n:03d}"
+            nt["first_seen"] = today
+            merged.append(nt)
+            added.append(nt["id"])
+
+    # 旧选题不在 new 中（选题池被删/编辑）→ 标 superseded
+    for ot in old_by_key.values():
+        ot["superseded_at"] = today
+        ot.setdefault("supersede_reason", "removed_from_topic_pool")
+        merged.append(ot)
+
+    return merged, added
+
+
 def run_ingest(ws: dict, verbose: bool = True) -> dict:
     kb = Path(ws["kb_path"])
     if not kb.exists():
@@ -87,18 +229,25 @@ def run_ingest(ws: dict, verbose: bool = True) -> dict:
     wsdir = Path(ws["dir"])
     today = date.today().isoformat()
 
-    file_index, facts, faq_items, topics = [], [], [], []
+    old_facts, old_topics, old_hashes = _load_old(wsdir)
+
+    file_index, new_facts, faq_items, new_topics = [], [], [], []
     templates, rules, rhythm = {}, {}, []
+    new_hashes = {}
 
     md_files = sorted(p for p in kb.rglob("*.md"))
-    fact_id = 0
+    seq = [0]  # 闭包计数器
+    seen_keys = set()  # 单次 ingest 内 add_fact 去重，避免同 (kb_ref, claim) 抽取多份
 
     def add_fact(claim, source, year, cat, kb_path, line=0):
-        nonlocal fact_id
-        fact_id += 1
+        key = (kb_path, (claim or "").strip()[:80])
+        if key in seen_keys:
+            return
+        seen_keys.add(key)
+        seq[0] += 1
         asserts = extract_assertions(claim)
-        facts.append({
-            "id": f"F-{fact_id:03d}",
+        new_facts.append({
+            "id": f"F-TEMP{seq[0]:03d}",   # 临时 ID，merge 阶段重分配
             "claim": claim.strip()[:300],
             "source": source,
             "year": year,
@@ -111,6 +260,7 @@ def run_ingest(ws: dict, verbose: bool = True) -> dict:
         rel = f.relative_to(kb)
         relstr = str(rel)
         text = mdutil.read(f)
+        new_hashes[relstr] = _sha256_file(f)
         d0 = _dir_of(rel.parts)
         sections = mdutil.parse_sections(text)
         summary = ""
@@ -165,8 +315,9 @@ def run_ingest(ws: dict, verbose: bool = True) -> dict:
                     title, ref = m2.group(2).strip(), (m2.group(3) or "").strip()
                     if "04_FAQ" in title:      # 元选题：展开为逐条 FAQ 选题
                         for qa in faq_items:
-                            topics.append({
-                                "id": f"T-Q{qa['id'][1:]:0>2}", "title": qa["q"],
+                            new_topics.append({
+                                "id": f"T-TEMP{len(new_topics)+1:03d}",
+                                "title": qa["q"],
                                 "pillar": "faq", "kb_refs": [DIRS["faq_dir"]],
                                 "faq_ref": qa["id"],
                                 "audience": "采购/研发工程师",
@@ -177,8 +328,9 @@ def run_ingest(ws: dict, verbose: bool = True) -> dict:
                         continue
                     t_id += 1
                     refs = [r.strip() for r in re.split(r"[、/]", ref) if r.strip()] if ref else []
-                    topics.append({
-                        "id": f"T-{t_id:03d}", "title": title,
+                    new_topics.append({
+                        "id": f"T-TEMP{len(new_topics)+1:03d}",
+                        "title": title,
                         "pillar": pillar,
                         "kb_refs": refs or [d0],
                         "faq_ref": None,
@@ -225,9 +377,37 @@ def run_ingest(ws: dict, verbose: bool = True) -> dict:
     rules["banned_words"] = BANNED_WORDS
     rules["fact_density_per_300"] = 2
 
+    # ===== 增量合并 =====
+    facts, added_fact_ids = _merge_facts(new_facts, old_facts)
+    topics, added_topic_ids = _merge_topics(new_topics, old_topics)
+
+    # 受影响物料：扫 content/C-*.md，引用了 superseded 事实的标 affected_by
+    affected = _mark_affected_items(wsdir, facts)
+
     out = {
         "generated_at": today,
         "kb_path": str(kb),
+        "diff": {
+            "files": {
+                "added": sorted(set(new_hashes) - set(old_hashes)),
+                "modified": sorted(p for p in (set(new_hashes) & set(old_hashes))
+                                   if new_hashes[p] != old_hashes[p]),
+                "removed": sorted(set(old_hashes) - set(new_hashes)),
+            },
+            "facts": {
+                "total": len(facts),
+                "new": len(added_fact_ids),
+                "new_ids": added_fact_ids,
+                "superseded": sum(1 for f in facts if f.get("superseded_at")),
+            },
+            "topics": {
+                "total": len(topics),
+                "new": len(added_topic_ids),
+                "new_ids": added_topic_ids,
+                "superseded": sum(1 for t in topics if t.get("superseded_at")),
+            },
+            "affected_items": affected,
+        },
         "counts": {
             "files": len(file_index), "facts": len(facts),
             "faq": len(faq_items), "topics": len(topics),
@@ -252,12 +432,72 @@ def run_ingest(ws: dict, verbose: bool = True) -> dict:
         json.dumps(rules, ensure_ascii=False, indent=1), encoding="utf-8")
     (wsdir / "kbmeta" / "files.json").write_text(
         json.dumps({"files": file_index}, ensure_ascii=False, indent=1), encoding="utf-8")
+    (wsdir / "kbmeta" / "ingest_report.json").write_text(
+        json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
+    _file_hashes_path(wsdir).write_text(
+        json.dumps(new_hashes, ensure_ascii=False, indent=1), encoding="utf-8")
 
     if verbose:
         print(f"[ingest] {kb}")
         for k, v in out["counts"].items():
             print(f"  {k}: {v}")
+        d = out["diff"]
+        if d["files"]["added"]:
+            print(f"  新增文件：{len(d['files']['added'])} 个")
+            for p in d["files"]["added"]:
+                print(f"    + {p}")
+        if d["files"]["modified"]:
+            print(f"  变更文件：{len(d['files']['modified'])} 个")
+            for p in d["files"]["modified"]:
+                print(f"    ~ {p}")
+        if d["files"]["removed"]:
+            print(f"  删除文件：{len(d['files']['removed'])} 个")
+            for p in d["files"]["removed"]:
+                print(f"    - {p}")
+        if d["facts"]["new"]:
+            print(f"  新增事实 {d['facts']['new']} 条"
+                  + (f"：{', '.join(d['facts']['new_ids'][:6])}" if d['facts']['new_ids'] else ""))
+        if d["facts"]["superseded"]:
+            print(f"  过期事实 {d['facts']['superseded']} 条（标 superseded_at，保留供历史追溯）")
+        if d["topics"]["new"]:
+            print(f"  新增选题 {d['topics']['new']} 条：{', '.join(d['topics']['new_ids'])}")
+        if d["topics"]["superseded"]:
+            print(f"  过期选题 {d['topics']['superseded']} 条")
+        if d["affected_items"]:
+            print(f"  受影响物料 {len(d['affected_items'])} 份（已标 affected_by，未改 status）")
     return out
+
+
+def _mark_affected_items(wsdir: Path, facts: list) -> list:
+    """扫 content/C-*.md，凡引用了 superseded 事实的物料在 front-matter 写 affected_by。"""
+    from ..pipelines.base import load_item, update_item
+    super_ids = {f["id"] for f in facts if f.get("superseded_at")}
+    if not super_ids:
+        return []
+    affected = []
+    content_dir = wsdir / "content"
+    if not content_dir.exists():
+        return []
+    for p in sorted(content_dir.glob("C-*.md")):
+        try:
+            item = load_item(p)
+        except Exception:
+            continue
+        meta = item["meta"]
+        cited = meta.get("facts") or []
+        hit = [fid for fid in cited if fid in super_ids]
+        if not hit:
+            # 清理之前的 affected_by（事实被重新激活的情况）
+            if meta.get("affected_by"):
+                update_item(p, affected_by=[])
+            continue
+        existing = set(meta.get("affected_by") or []) | set(hit)
+        if list(existing) != (meta.get("affected_by") or []):
+            update_item(p, affected_by=sorted(existing))
+            affected.append({"id": meta.get("id"), "file": p.name,
+                              "affected_by": sorted(existing),
+                              "status": meta.get("status")})
+    return affected
 
 
 def _platforms_config(kb: Path) -> list:
