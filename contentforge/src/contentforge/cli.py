@@ -59,7 +59,7 @@ def cmd_generate(args):
     cfg = llm_config()
     use_llm = args.llm
     if use_llm and not cfg["has_key"]:
-        raise SystemExit("未配置 API key：设置 CF_API_KEY / llm.json，或去掉 --llm 用 mock 模式")
+        raise SystemExit("未配置 API key：在 .env / 环境变量 CF_API_KEY / llm.json 中配置，或去掉 --llm 用 mock 模式")
     if not use_llm:
         print("（mock 模式：确定性骨架稿。配置 API key 后加 --llm 生成成稿）")
 

@@ -31,16 +31,25 @@ cd contentforge
 
 ## 接入 LLM（当前为 mock 骨架稿模式）
 
-机器上未配置 API key 时，`generate` 产出**确定性骨架稿**（结构完整、数字全部可溯源，但行文是拼装的）。配置任意 OpenAI 兼容服务后生成成稿：
+机器上未配置 API key 时，`generate` 产出**确定性骨架稿**（结构完整、数字全部可溯源，但行文是拼装的）。配置任意 OpenAI 兼容服务后生成成稿。
+
+推荐用 `.env`（已 gitignore，不入库）：
+
+```bash
+cp .env.example .env      # 首次
+# 编辑 .env，至少填 CF_API_KEY
+./cf generate pcb --topic T-Q08 --llm
+```
+
+`.env` 支持 `CF_API_KEY` / `CF_BASE_URL` / `CF_MODEL`（也兼容 `OPENAI_*` 别名）。优先级：真实环境变量 > `.env` > 仓库根 `llm.json` > 默认（智谱 `glm-4-flash`）。
+
+也可临时 export 或写入仓库根 `llm.json`：
 
 ```bash
 export CF_API_KEY="你的key"
 export CF_BASE_URL="https://open.bigmodel.cn/api/paas/v4"   # 可换 DeepSeek/Qwen/OpenAI 等
 export CF_MODEL="glm-4-flash"
-./cf generate pcb --topic T-Q08 --llm
 ```
-
-或写入仓库根 `llm.json`：`{"api_key": "...", "base_url": "...", "model": "..."}`。
 
 ## 防编造机制（工具的核心）
 

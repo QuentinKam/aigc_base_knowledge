@@ -1,6 +1,6 @@
 """OpenAI 兼容 LLM 客户端（标准库 urllib，无第三方依赖）。
 
-配置：环境变量 CF_API_KEY / CF_BASE_URL / CF_MODEL，
+配置：仓库根 .env 或环境变量 CF_API_KEY / CF_BASE_URL / CF_MODEL，
 或仓库根 llm.json：{"api_key": "...", "base_url": "...", "model": "..."}
 默认指向智谱开放平台（OpenAI 兼容端点），可换任意兼容服务。
 """

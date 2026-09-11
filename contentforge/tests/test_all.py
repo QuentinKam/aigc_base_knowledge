@@ -72,6 +72,26 @@ class TestAntiFabrication(unittest.TestCase):
         self.assertTrue(all(a["verdict"] == "pass" for a in checked))
 
 
+class TestProductionSections(unittest.TestCase):
+    """视频物料的「分镜表/拍摄清单」是拍摄执行指令，其中的画面示意数字与道具数量不参与溯源。"""
+
+    def setUp(self):
+        from contentforge.config import load_workspace
+        self.ws = load_workspace("pcb")
+
+    def test_storyboard_and_props_ignored(self):
+        from contentforge.checks.fact_checker import check_item
+        body = ("## 口播稿\n\nPCB 打样 50 块和 500 块的板，差别在哪？\n\n"
+                "## 分镜表\n\n| 1 | 0-3s | 左侧标\"50\"，右侧标\"500\" | 钩子句 | 字幕 |\n\n"
+                "## 拍摄清单\n\n- 双面板、4 层板各 1 片\n")
+        self.assertEqual(check_item({"body": body}, self.ws)["failures"], [])
+
+    def test_fabricated_number_in_prose_still_fails(self):
+        from contentforge.checks.fact_checker import check_item
+        r = check_item({"body": "## 口播稿\n\n2025 年全球 PCB 产值约 9999 亿美元\n"}, self.ws)
+        self.assertIn(9999.0, {a["num"] for a in r["failures"]})
+
+
 class TestConsistency(unittest.TestCase):
     """验收 A5：同一事实跨物料共享，矩阵输出。"""
 

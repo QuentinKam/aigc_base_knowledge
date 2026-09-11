@@ -1,31 +1,33 @@
 {
- "generated_at": "2026-09-09",
- "kb_path": "/Users/quentingam/Documents/pcb_knowledge_base",
+ "generated_at": "2026-09-11",
+ "kb_path": "/Users/quentingam/Documents/PCB_ALL/pcb_knowledge_base",
  "diff": {
   "files": {
    "added": [],
-   "modified": [],
+   "modified": [
+    "01_行业基础/制造工艺流程.md"
+   ],
    "removed": []
   },
   "facts": {
-   "total": 59,
+   "total": 203,
    "new": 0,
    "new_ids": [],
-   "superseded": 0
+   "superseded": 1
   },
   "topics": {
-   "total": 29,
+   "total": 108,
    "new": 0,
    "new_ids": [],
-   "superseded": 0
+   "superseded": 1
   },
   "affected_items": []
  },
  "counts": {
   "files": 12,
-  "facts": 59,
-  "faq": 13,
-  "topics": 29,
+  "facts": 203,
+  "faq": 46,
+  "topics": 108,
   "templates": [
    "faq_page",
    "article",

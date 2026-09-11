@@ -7,6 +7,11 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+# 若存在 .env 则加载（供 LLM key；后端也会自行加载，这里只为下面的提示准确）
+if [ -f .env ]; then
+  set -a; . ./.env; set +a
+fi
+
 # ===== 1. 准备 Python venv（首次自动创建）=====
 if [ ! -d ".venv" ]; then
   echo "📦 创建 Python venv…"
