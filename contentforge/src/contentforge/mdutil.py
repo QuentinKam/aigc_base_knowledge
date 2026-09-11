@@ -37,6 +37,20 @@ def parse_tables(text: str) -> list:
     return tables
 
 
+def section_lines(text: str, titles) -> set:
+    """返回标题命中 titles（子串匹配）的章节所覆盖的行号集合（含标题行与其正文，直到下一个标题）。"""
+    out, active = set(), False
+    for i, line in enumerate(text.splitlines(), start=1):
+        m = HEADING_RE.match(line)
+        if m:
+            active = any(t in m.group(2) for t in titles)
+            if active:
+                out.add(i)
+        elif active:
+            out.add(i)
+    return out
+
+
 def parse_sections(text: str) -> list:
     """返回 [{level, title, line, text}]，text 为该章节正文（含子级）。
     fenced 代码块内的 # 行不视为标题。"""

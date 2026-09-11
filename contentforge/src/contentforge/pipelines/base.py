@@ -16,8 +16,8 @@ FORMAT_LABEL = {"faq_page": "官网 FAQ 页", "article": "知乎/公众号长文
 SYSTEM_CONSTRAINT = """你是 B2B 行业内容工程师，负责把知识库事实改写成面向采购/工程师的发布内容。硬性规则：
 1. 只能使用【事实包】中的数据（数字、价格、时长、占比、参数、标准编号、认证名）。事实包中没有的数据，一律原样写 [数据缺口：需要XX]，禁止编造，禁止使用你记忆中的任何数字。
 2. 【知识素材】中的观点与方法可以转述，但不得引入其中出现过的数字之外的新数字。
-3. 品牌信息只能来自【品牌档案】，且只在指定位置出现一次；禁止"最好/第一/顶级/行业领先/绝对"等夸大词，不硬广。
-4. 引用数据时在句末标注（来源，年份），来源与年份必须照抄事实包。
+3. 品牌信息只能来自【品牌档案】：公司名必须在正文中自然出现至少一次（视频物料出现在口播稿结尾或发布文案里），不硬广；禁止"最好/第一/顶级/行业领先/绝对"等夸大词。
+4. 每条引用数据的句子都必须紧跟（来源：X，年份）标注，用全角括号、与数据写在同一段；来源与年份照抄事实包，不得自造。事实包中年份为空时只写（来源：X），不要写"年份未标注"之类的占位。只有提问句、钩子、封面/标题可以不带标注。
 5. 直接输出正文 Markdown，不要任何解释、不要代码块包裹。"""
 
 
@@ -98,11 +98,22 @@ def build_material(ws, topic) -> str:
     return "\n\n".join(parts) or "（无）"
 
 
-def factpack_text(pack) -> str:
+def source_label(source: str, files: list) -> str:
+    """把事实来源转成对外可读的名字：知识库文件路径 → 文档标题，外部机构名原样保留。"""
+    if not source:
+        return ""
+    for f in files:
+        if source == f.get("path"):
+            return f"《{f.get('title') or f['path']}》"
+    return source
+
+
+def factpack_text(pack, files: list = None) -> str:
+    files = files or []
     rows = []
     for f in pack:
         year = f.get("year") or ""
-        rows.append(f"{f['id']} | {f['claim']} | 来源：{f['source']} | {year}")
+        rows.append(f"{f['id']} | {f['claim']} | 来源：{source_label(f['source'], files)} | {year}")
     return "\n".join(rows) or "（无）"
 
 
@@ -211,7 +222,8 @@ def generate_one(ws, topic, fmt: str, meta_ctx: dict, use_llm: bool, llm_cfg: di
     ctx = {
         "ws": ws, "topic": topic, "fmt": fmt, "pack": pack, "material": material,
         "brand": brand, "faq": meta_ctx["faq"], "templates": meta_ctx["templates"],
-        "rules": meta_ctx["rules"], "brand_sentence": brand_line(brand, "video" if fmt == "video" else "general"),
+        "rules": meta_ctx["rules"], "files": meta_ctx["files"],
+        "brand_sentence": brand_line(brand, "video" if fmt == "video" else "general"),
     }
     if use_llm and stream:
         # 流式：返回 generator，先 yield token，最后 yield Path
@@ -265,7 +277,7 @@ def _build_user_prompt(ctx, inject_fabrication: str = None) -> str:
 【目标受众】{t.get('audience', '采购/研发工程师')}
 【目标平台】{', '.join(t.get('platforms', []))}
 【事实包】（唯一合法数据来源，格式 ID | 断言 | 来源 | 年份）
-{factpack_text(ctx['pack'])}
+{factpack_text(ctx['pack'], ctx.get('files'))}
 
 【知识素材】（可转述观点，不得新增数字）
 {ctx['material']}
@@ -293,7 +305,10 @@ def _format_requirements(fmt: str) -> str:
                 "文末'**参考来源：**'列表。开头给出 3 个候选标题（# 主标题 + '备选标题：'行）。")
     if fmt == "video":
         return ("输出短视频物料包，必须包含以下小节（## 级）：\n"
-                "## 钩子备选（3 个，每个一句）\n## 口播稿（60-90 秒）—— 按 [0-3s]/[3-20s]/[20-70s]/[70-90s] 时间轴逐句，总字数 240-360 字\n"
+                "## 钩子备选（3 个，每个一句）\n"
+                "## 口播稿（60-90 秒）—— 按 [0-3s]/[3-20s]/[20-70s]/[70-90s] 时间轴逐句；"
+                "正文总字数严格控制在 240-360 字（硬上限，超出即不合格，先精简要点再输出）；"
+                "每个引用数据的句子后紧跟（来源：X，年份）；结尾自然带出公司名与一句能力\n"
                 "## 分镜表 —— Markdown 表格：镜号|时间|画面/B-roll 建议|口播句|字幕\n"
                 "## 封面与标题\n## 发布文案（抖音版/视频号版 + 话题标签）\n## 拍摄清单")
     if fmt == "data_article":

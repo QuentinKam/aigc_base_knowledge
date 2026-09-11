@@ -1,10 +1,24 @@
 """GEOChecker：知识库 06 六条写作规范的结构化门禁（spec §6.2）。"""
 import re
 
-from .. import numbers
+from .. import mdutil, numbers
 from ..brand import parse_brand
 
-SRC_ANNOTATION = re.compile(r"（[^（）]*(?:来源|\d{4})[^（）]*）")
+SRC_ANNOTATION = re.compile(r"[（(][^（）()]*(?:来源|\d{4})[^（）()]*[）)]")
+
+# G4 只约束「数据阐述」区块：钩子/封面/发布文案/分镜/拍摄清单属于营销文案与拍摄执行指令，
+# 其中的数字是标题、画面示意或道具数量，不要求标注来源。
+NON_DATA_SECTIONS = ("钩子备选", "分镜表", "封面与标题", "发布文案", "拍摄清单")
+
+
+def _paragraph_spans(body: str) -> list:
+    """返回 [(段落文本, 起始行号, 结束行号)]，与 body.split("\\n\\n") 对齐。"""
+    spans, line = [], 1
+    for block in body.split("\n\n"):
+        n = block.count("\n") + 1
+        spans.append((block.strip(), line, line + n - 1))
+        line += n + 1
+    return spans
 
 
 def check_item(item: dict, ws) -> dict:
@@ -32,26 +46,27 @@ def check_item(item: dict, ws) -> dict:
     if brand.get("is_placeholder"):
         warnings.append({"rule": "G5", "msg": "品牌档案为示例占位内容，替换前不得对外发布"})
 
-    paras = [p.strip() for p in body.split("\n\n") if p.strip()]
-    numeric_paras = [p for p in paras if any(
-        a["kind"] in ("strict", "year") for a in numbers.extract_assertions(p))]
-
     # G3 事实密度：每 300 字 ≥ 2 个具体数字/标准/年份
     n_facts = sum(1 for a in numbers.extract_assertions(body) if a["kind"] in ("strict", "year"))
     density = n_facts / max(len(body) / 300, 1)
     if density < rules.get("fact_density_per_300", 2):
         failures.append({"rule": "G3", "msg": f"事实密度不足：{density:.1f}/300字（要求 ≥{rules.get('fact_density_per_300', 2)}）"})
 
-    # G4 数据标注来源/年份：数值段落需带（来源…）/（…2025…）式标注
-    # 豁免：表格行（来源在列中）、标题行、备选标题、品牌句（品牌数字来自 brand.md）
-    from ..brand import parse_brand as _pb
-    brand_name = re.sub(r"（.*?）", "", _pb(ws["dir"])["fields"].get("公司名称", "")).strip()
-    unannotated = [p for p in numeric_paras
+    # G4 数据标注来源/年份：数据阐述段落需带（来源…）/（…2025…）式标注
+    # 豁免：非数据阐述区块（钩子/封面/发布文案/分镜/拍摄清单）、表格行、标题行、
+    #       备选标题、品牌句（品牌数字来自 brand.md）、提问句（提问不是数据引用）
+    brand_name = re.sub(r"（.*?）", "", parse_brand(ws["dir"])["fields"].get("公司名称", "")).strip()
+    skip = mdutil.section_lines(body, NON_DATA_SECTIONS)
+    data_paras = [p for p, s, e in _paragraph_spans(body)
+                  if any(a["kind"] in ("strict", "year") for a in numbers.extract_assertions(p))
+                  and not all(ln in skip for ln in range(s, e + 1))]
+    unannotated = [p for p in data_paras
                    if not p.startswith(("|", "#", "（备选"))
                    and not (brand_name and brand_name in p)
+                   and not p.rstrip().endswith(("？", "?"))
                    and not SRC_ANNOTATION.search(p)
                    and "数据来源" not in p]
-    if len(unannotated) > max(1, len(numeric_paras) // 3):
+    if len(unannotated) > max(1, len(data_paras) // 3):
         failures.append({"rule": "G4", "msg": f"{len(unannotated)} 个含数据段落缺少（来源，年份）标注"})
 
     if fmt == "faq_page":

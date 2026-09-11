@@ -89,6 +89,9 @@
 - [ ] 把测试纳入 CI（GitHub Actions）
 - [ ] `web/api.py` + `web/frontend/` 演示台部署（可选，用于客户演示）
 - [ ] 补 `pyproject.toml` / `requirements.txt`（当前依赖靠 `.venv`，无声明文件）
+- [ ] （低优先级）视频口播稿字数上限未强制：prompt 已写「240-360 字硬上限」，但 LLM 仍会超
+      （实测 531 字），当前只是告警、不阻断门禁。需要时加一轮「超长则压缩」的二次调用，
+      或把该告警升级为失败。
 
 ### 3.7 反哺闭环（`intent.md` 的 P1 项）
 

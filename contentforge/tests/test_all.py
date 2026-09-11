@@ -92,6 +92,53 @@ class TestProductionSections(unittest.TestCase):
         self.assertIn(9999.0, {a["num"] for a in r["failures"]})
 
 
+class TestGeoNonDataSections(unittest.TestCase):
+    """G4：钩子/封面/发布文案/分镜/拍摄清单属营销文案与拍摄指令，不要求来源标注；正文数据段仍要求。"""
+
+    def setUp(self):
+        from contentforge.config import load_workspace
+        self.ws = load_workspace("pcb")
+
+    def _g4(self, body):
+        from contentforge.checks.geo_checker import check_item
+        r = check_item({"body": body, "meta": {"format": "video"}}, self.ws)
+        return [f for f in r["failures"] if f["rule"] == "G4"]
+
+    def test_marketing_sections_exempt(self):
+        body = ("## 钩子备选（3 个，每个一句）\n\n1. 打样 50 块和 500 块差在哪？\n\n"
+                "## 口播稿（60-90 秒）\n\n[0-3s]\n\n打样多少钱？\n\n"
+                "## 分镜表\n\n| 1 | 0-3s | 左侧标\"500\" | 钩子 | 字幕 |\n\n"
+                "## 封面与标题\n\n主标题：10 片 4 层板报价\n\n"
+                "## 发布文案\n\n抖音版：打样 3-7 天交货\n\n"
+                "## 拍摄清单\n\n- 样板各 1 片\n")
+        self.assertEqual(self._g4(body), [])
+
+    def test_prose_without_source_still_flagged(self):
+        body = ("## 口播稿（60-90 秒）\n\n"
+                "常规交期 3-7 天，加急可 24-48 小时。\n\n"
+                "加急通常上浮 30%-100%。\n\n"
+                "多层板占全球 PCB 市场约 48.9%。\n")
+        self.assertTrue(self._g4(body))
+
+
+class TestSourceLabel(unittest.TestCase):
+    """事实来源对外可读：知识库文件路径 → 文档标题，外部机构名原样保留。"""
+
+    FILES = [{"path": "04_FAQ/高频问答库.md", "title": "高频问答库"}]
+
+    def test_kb_path_mapped_to_title(self):
+        from contentforge.pipelines.base import source_label
+        self.assertEqual(source_label("04_FAQ/高频问答库.md", self.FILES), "《高频问答库》")
+        self.assertEqual(source_label("华经产业研究院", self.FILES), "华经产业研究院")
+
+    def test_factpack_uses_label(self):
+        from contentforge.pipelines.base import factpack_text
+        pack = [{"id": "F-050", "claim": "打样 3-7 天", "source": "04_FAQ/高频问答库.md", "year": None}]
+        text = factpack_text(pack, self.FILES)
+        self.assertIn("来源：《高频问答库》", text)
+        self.assertNotIn(".md", text)
+
+
 class TestConsistency(unittest.TestCase):
     """验收 A5：同一事实跨物料共享，矩阵输出。"""
 
