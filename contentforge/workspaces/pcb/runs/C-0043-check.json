@@ -10,13 +10,18 @@
     "unit": "倍",
     "raw": " 10 倍",
     "kind": "strict",
-    "line": 43,
+    "line": 44,
     "snippet": "2. 同样 10 片板，为什么报价差 10 倍？",
     "verdict": "FAIL",
     "note": "未在事实注册表中找到 10 倍"
    }
   ],
-  "warnings": [],
+  "warnings": [
+   {
+    "rule": "anchor:migration",
+    "msg": "未检测到事实锚点（〔F-xxx〕），按旧版裸值集合规则校验；新生成内容必须挂锚点（主体张冠李戴旧规则拦不住）"
+   }
+  ],
   "gaps": [],
   "matched_ids": [
    "BRAND",
@@ -33,7 +38,8 @@
    "F-145",
    "F-159",
    "F-170"
-  ]
+  ],
+  "mode": "legacy"
  },
  "geo": {
   "failures": [],

@@ -1,22 +1,16 @@
 {
  "id": "C-0014",
  "format": "video",
- "status": "generated",
+ "status": "geo_pass",
  "fact": {
-  "total": 37,
-  "failures": [
+  "total": 22,
+  "failures": [],
+  "warnings": [
    {
-    "num": 13.0,
-    "unit": "",
-    "raw": "13",
-    "kind": "strict_bare",
-    "line": 32,
-    "snippet": "| 1 | 0-3s | 板子特写 + 大字幕抛问题 | 一块多层板是怎么造出来的：13 道工序拆解？ | 一块多层板是",
-    "verdict": "FAIL",
-    "note": "无单位数字 13 未能溯源"
+    "rule": "anchor:migration",
+    "msg": "未检测到事实锚点（〔F-xxx〕），按旧版裸值集合规则校验；新生成内容必须挂锚点（主体张冠李戴旧规则拦不住）"
    }
   ],
-  "warnings": [],
   "gaps": [],
   "matched_ids": [
    "BRAND",
@@ -25,20 +19,13 @@
    "F-005",
    "F-041",
    "F-058",
-   "F-060",
    "F-061",
-   "F-062",
-   "F-063",
-   "F-064"
-  ]
+   "F-062"
+  ],
+  "mode": "legacy"
  },
  "geo": {
-  "failures": [
-   {
-    "rule": "G4",
-    "msg": "4 个含数据段落缺少（来源，年份）标注"
-   }
-  ],
+  "failures": [],
   "warnings": [
    {
     "rule": "G5",
@@ -49,6 +36,6 @@
     "msg": "口播稿约 435 字，建议 240-360 字（60-90 秒）"
    }
   ],
-  "density": 4.0
+  "density": 3.99
  }
 }

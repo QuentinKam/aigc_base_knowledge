@@ -41,12 +41,19 @@ def run_checks(ws, item_path: Path, save_report: bool = True) -> dict:
 def print_report(r: dict) -> str:
     lines = [f"[{r['id']}] format={r['format']} → 状态 {r['status']}"]
     f, g = r["fact"], r["geo"]
+    mode = f.get("mode", "legacy")
+    mode_label = "锚点验签" if mode == "anchor" else "旧版裸值"
     lines.append(f"  FactChecker: {'✓' if not f['failures'] else '✗ FAIL'}"
-                 f"（断言 {f['total']}，溯源失败 {len(f['failures'])}，告警 {len(f['warnings'])}，数据缺口 {len(f['gaps'])}）")
+                 f"（{mode_label}｜断言 {f['total']}，失败 {len(f['failures'])}，告警 {len(f['warnings'])}，数据缺口 {len(f['gaps'])}）")
     for x in f["failures"][:8]:
-        lines.append(f"    ✗ L{x['line']} {x['note']}｜「{x['snippet']}」")
+        loc = f"L{x['line']} " if x.get("line") else ""
+        note = x.get("note") or x.get("msg", "")
+        snip = f"｜「{x['snippet']}」" if x.get("snippet") else ""
+        lines.append(f"    ✗ {loc}{note}{snip}")
     for x in f["warnings"][:5]:
-        lines.append(f"    ⚠ L{x['line']} {x['note']}")
+        loc = f"L{x['line']} " if x.get("line") else ""
+        note = x.get("note") or x.get("msg", "")
+        lines.append(f"    ⚠ {loc}{note}")
     for gp in f["gaps"][:5]:
         lines.append(f"    ◇ 数据缺口标记：{gp}")
     lines.append(f"  GEOChecker: {'✓' if not g['failures'] else '✗ FAIL'}"

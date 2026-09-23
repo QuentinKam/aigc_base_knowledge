@@ -5,7 +5,12 @@
  "fact": {
   "total": 44,
   "failures": [],
-  "warnings": [],
+  "warnings": [
+   {
+    "rule": "anchor:migration",
+    "msg": "未检测到事实锚点（〔F-xxx〕），按旧版裸值集合规则校验；新生成内容必须挂锚点（主体张冠李戴旧规则拦不住）"
+   }
+  ],
   "gaps": [],
   "matched_ids": [
    "BRAND",
@@ -64,7 +69,8 @@
    "F-143",
    "F-178",
    "F-180"
-  ]
+  ],
+  "mode": "legacy"
  },
  "geo": {
   "failures": [],
@@ -74,6 +80,6 @@
     "msg": "品牌档案为示例占位内容，替换前不得对外发布"
    }
   ],
-  "density": 11.93
+  "density": 11.92
  }
 }

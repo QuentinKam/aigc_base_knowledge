@@ -5,7 +5,12 @@
  "fact": {
   "total": 52,
   "failures": [],
-  "warnings": [],
+  "warnings": [
+   {
+    "rule": "anchor:migration",
+    "msg": "未检测到事实锚点（〔F-xxx〕），按旧版裸值集合规则校验；新生成内容必须挂锚点（主体张冠李戴旧规则拦不住）"
+   }
+  ],
   "gaps": [],
   "matched_ids": [
    "BRAND",
@@ -71,7 +76,8 @@
    "F-145",
    "F-178",
    "F-180"
-  ]
+  ],
+  "mode": "legacy"
  },
  "geo": {
   "failures": [],

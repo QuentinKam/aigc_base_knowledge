@@ -30,6 +30,7 @@ _RATIO = r"(\d+)\s*/\s*(\d+)\s*(mil|mm|μm|um)"
 
 # 抽取前需要屏蔽的上下文
 MASK_PATTERNS = [
+    re.compile(r"[〔\[（(]\s*F-\d{3}\s*[〕\]）)]"),            # 事实锚点〔F-017〕（不是数据）
     re.compile(r"\d{4}-\d{1,2}-\d{1,2}"),                    # 日期 2026-09-05
     re.compile(r"\d{4}年\d{1,2}月\d{1,2}日"),
     re.compile(r"\[\d+\s*[-–]\s*\d+\s*s\]"),                 # 视频时间轴 [0-3s]

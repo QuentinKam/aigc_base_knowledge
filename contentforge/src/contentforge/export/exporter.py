@@ -56,9 +56,12 @@ def _faq_jsonld(body: str) -> str:
 
 
 def export_all(ws, ids=None, force=False) -> dict:
-    from ..pipelines.base import load_item
+    from .. import anchors, registry
+    from ..pipelines.base import load_item, load_meta
     wsdir = Path(ws["dir"])
     outdir = wsdir / "export"
+    facts_map = {f["id"]: f for f in registry.load_facts(ws)}
+    kb_files = load_meta(ws)["files"]
     manifest = {"exported_at": date.today().isoformat(), "items": []}
     paths = sorted((wsdir / "content").glob("C-*.md"))
     for p in paths:
@@ -68,6 +71,8 @@ def export_all(ws, ids=None, force=False) -> dict:
         status = item["meta"].get("status")
         if status not in ("approved", "published") and not force:
             continue
+        # 内部锚点稿 → 对外来源稿：〔F-017〕渲染为（来源：X，年份）
+        item["body"] = anchors.render_anchors(item["body"], facts_map, kb_files)
         files = export_item(ws, item, outdir)
         manifest["items"].append({"id": item["meta"]["id"], "format": item["meta"]["format"],
                                   "status": status, "files": files})

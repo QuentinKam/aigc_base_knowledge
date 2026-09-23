@@ -151,5 +151,93 @@ class TestConsistency(unittest.TestCase):
         self.assertIn("F-016", r["shared_facts"])
 
 
+class TestAnchorVerification(unittest.TestCase):
+    """事实锚点验签：主体张冠李戴、错挂 ID、游离断言、年份缺失。"""
+
+    def setUp(self):
+        from contentforge.config import load_workspace
+        from contentforge import anchors, registry
+        self.ws = load_workspace("pcb")
+        self.facts = registry.load_facts(self.ws)
+        self.fmap = {f["id"]: f for f in self.facts}
+        self.tagger = anchors.load_tagger(self.ws)
+        self.allowed = {"F-016", "F-017", "F-018"}
+
+    def verify(self, body):
+        from contentforge.anchors import verify_body
+        return verify_body(body, self.facts, self.tagger, allowed_ids=self.allowed)
+
+    def rules(self, result):
+        return [f["rule"] for f in result["failures"]]
+
+    def test_fact_entities_derived_from_claim(self):
+        from contentforge.anchors import fact_tags
+        self.assertEqual(fact_tags(self.fmap["F-017"], self.tagger)["scope"], {"全球"})
+        self.assertEqual(fact_tags(self.fmap["F-018"], self.tagger)["scope"], {"中国大陆"})
+
+    def test_correct_anchor_passes(self):
+        r = self.verify("2024 年全球 PCB 产值约 735 亿美元〔F-017〕")
+        self.assertTrue(r["anchored"])
+        self.assertEqual(r["failures"], [])
+        self.assertIn("F-017", r["matched_ids"])
+
+    def test_subject_misattribution_fails(self):
+        """735 亿是全球（F-017），写成大陆必须 FAIL。"""
+        r = self.verify("2024 年中国大陆 PCB 产值约 735 亿美元〔F-017〕")
+        self.assertIn("anchor:subject", self.rules(r))
+
+    def test_wrong_value_for_anchor_fails(self):
+        """值对但挂错 ID：F-018（412.13/437.34 亿）下挂 735 亿 → FAIL。"""
+        r = self.verify("2024 年全球 PCB 产值约 735 亿美元〔F-018〕")
+        self.assertIn("anchor:value", self.rules(r))
+
+    def test_missing_year_fails(self):
+        r = self.verify("全球 PCB 产值约 735 亿美元〔F-017〕")
+        self.assertIn("anchor:year", self.rules(r))
+
+    def test_bare_assertion_in_contract_body_fails(self):
+        body = ("2024 年全球 PCB 产值约 735 亿美元〔F-017〕。\n\n"
+                "大陆占比很高，约 70%。")
+        r = self.verify(body)
+        bare = [f for f in r["failures"] if f["rule"] == "anchor:bare"]
+        self.assertTrue(bare)
+        self.assertEqual({f["num"] for f in bare}, {70.0})
+
+    def test_multi_clause_split_with_inheritance_passes(self):
+        """全球/大陆两个主体拆成两个分句各挂各的 ID，年份沿同段承接。"""
+        r = self.verify("2024 年全球 PCB 产值约 735 亿美元〔F-017〕，其中中国大陆占 56.1%〔F-018〕")
+        self.assertEqual(r["failures"], [])
+        self.assertEqual(r["matched_ids"], {"F-017", "F-018"})
+
+    def test_unknown_and_out_of_pack_anchor_fail(self):
+        self.assertIn("anchor:unknown",
+                      self.rules(self.verify("2024 年全球 PCB 产值约 735 亿美元〔F-999〕")))
+        # F-020 存在但不在本次事实包 → 越权引用
+        r = self.verify("2024 年全球多层 PCB 市场规模 367 亿美元〔F-020〕")
+        self.assertIn("anchor:scope", self.rules(r))
+
+    def test_two_anchors_one_clause_fails(self):
+        r = self.verify("2024 年全球 PCB 产值约 735 亿美元〔F-017〕〔F-018〕")
+        self.assertIn("anchor:multi", self.rules(r))
+
+    def test_non_anchor_body_stays_legacy(self):
+        r = self.verify("2024 年全球 PCB 产值约 735 亿美元")
+        self.assertFalse(r["anchored"])
+
+    def test_render_anchor_to_source(self):
+        from contentforge.anchors import render_anchors
+        out = render_anchors("2024 年全球 PCB 产值约 735 亿美元〔F-017〕", self.fmap, [])
+        self.assertIn("（来源：Prismark / 艾媒咨询转引，2024）", out)
+        self.assertNotIn("〔", out)
+
+    def test_check_item_contract_mode_blocks_chetao_case(self):
+        from contentforge.checks.fact_checker import check_item
+        item = {"body": "2024 年中国大陆 PCB 产值约 735 亿美元〔F-017〕",
+                "meta": {"facts": ["F-017"]}}
+        r = check_item(item, self.ws)
+        self.assertEqual(r["mode"], "anchor")
+        self.assertIn("anchor:subject", [f["rule"] for f in r["failures"]])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

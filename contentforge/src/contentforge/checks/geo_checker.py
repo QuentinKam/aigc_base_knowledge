@@ -1,7 +1,7 @@
 """GEOChecker：知识库 06 六条写作规范的结构化门禁（spec §6.2）。"""
 import re
 
-from .. import mdutil, numbers
+from .. import anchors, mdutil, numbers
 from ..brand import parse_brand
 
 SRC_ANNOTATION = re.compile(r"[（(][^（）()]*(?:来源|\d{4})[^（）()]*[）)]")
@@ -65,6 +65,7 @@ def check_item(item: dict, ws) -> dict:
                    and not (brand_name and brand_name in p)
                    and not p.rstrip().endswith(("？", "?"))
                    and not SRC_ANNOTATION.search(p)
+                   and not anchors.ANCHOR_RE.search(p)
                    and "数据来源" not in p]
     if len(unannotated) > max(1, len(data_paras) // 3):
         failures.append({"rule": "G4", "msg": f"{len(unannotated)} 个含数据段落缺少（来源，年份）标注"})

@@ -3,9 +3,14 @@
  "format": "video",
  "status": "geo_pass",
  "fact": {
-  "total": 30,
+  "total": 17,
   "failures": [],
-  "warnings": [],
+  "warnings": [
+   {
+    "rule": "anchor:migration",
+    "msg": "未检测到事实锚点（〔F-xxx〕），按旧版裸值集合规则校验；新生成内容必须挂锚点（主体张冠李戴旧规则拦不住）"
+   }
+  ],
   "gaps": [],
   "matched_ids": [
    "BRAND",
@@ -14,12 +19,10 @@
    "F-005",
    "F-041",
    "F-058",
-   "F-060",
    "F-061",
-   "F-062",
-   "F-063",
-   "F-064"
-  ]
+   "F-062"
+  ],
+  "mode": "legacy"
  },
  "geo": {
   "failures": [],
@@ -33,6 +36,6 @@
     "msg": "口播稿约 436 字，建议 240-360 字（60-90 秒）"
    }
   ],
-  "density": 2.78
+  "density": 2.77
  }
 }

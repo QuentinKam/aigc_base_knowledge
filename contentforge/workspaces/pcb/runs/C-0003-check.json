@@ -3,24 +3,25 @@
  "format": "video",
  "status": "geo_pass",
  "fact": {
-  "total": 39,
+  "total": 20,
   "failures": [],
-  "warnings": [],
+  "warnings": [
+   {
+    "rule": "anchor:migration",
+    "msg": "未检测到事实锚点（〔F-xxx〕），按旧版裸值集合规则校验；新生成内容必须挂锚点（主体张冠李戴旧规则拦不住）"
+   }
+  ],
   "gaps": [],
   "matched_ids": [
    "BRAND",
-   "F-003",
    "F-039",
    "F-041",
    "F-058",
-   "F-060",
-   "F-063",
-   "F-065",
    "F-073",
-   "F-088",
    "F-103",
    "F-145"
-  ]
+  ],
+  "mode": "legacy"
  },
  "geo": {
   "failures": [],
