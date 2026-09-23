@@ -16,7 +16,8 @@ PRODUCTION_SECTIONS = ("分镜表", "拍摄清单")
 NON_DATA_SECTIONS = ("钩子备选", "分镜表", "封面与标题", "发布文案", "拍摄清单")
 
 
-def check_item(item: dict, ws) -> dict:
+def check_item(item: dict, ws, llm_assist: bool = False,
+               chat_json_fn=None, threshold: float = 0.9, model: str = "") -> dict:
     body = item["body"]
     facts = registry.load_facts(ws)
     tagger = anchors.load_tagger(ws)
@@ -28,6 +29,13 @@ def check_item(item: dict, ws) -> dict:
                                         skip_lines=anchor_skip, allowed_ids=allowed or None)
 
     if anchor_result["anchored"]:
+        # 未登录主体表述：LLM 只做归类，归类结果回确定性闸复验（默认关闭，check 纯确定性）
+        if llm_assist and chat_json_fn and anchor_result["failures"]:
+            from .classify import resolve_subject_missing
+            dimensions = anchors.load_dimensions(ws)
+            anchor_result = resolve_subject_missing(
+                ws, body, anchor_result, facts, tagger, dimensions,
+                chat_json_fn, threshold=threshold, model=model)
         return {"total": 0, "failures": anchor_result["failures"],
                 "warnings": anchor_result["warnings"], "gaps": _gaps(body),
                 "matched_ids": sorted(anchor_result["matched_ids"]),

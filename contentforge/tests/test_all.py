@@ -1,6 +1,7 @@
 """单元测试：数字抽取 / 防编造（验收 A3）/ 年份 / 一致性（A5）。
 运行：cd contentforge && python3 -m unittest tests.test_all -v
 """
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -237,6 +238,158 @@ class TestAnchorVerification(unittest.TestCase):
         r = check_item(item, self.ws)
         self.assertEqual(r["mode"], "anchor")
         self.assertIn("anchor:subject", [f["rule"] for f in r["failures"]])
+
+
+class TestLLMAssistAndRepair(unittest.TestCase):
+    """LLM 兜底：主体归类（裁决权仍在确定性闸）+ 一轮回炉修复。全程注入 fake LLM。"""
+
+    def setUp(self):
+        import tempfile
+        from pathlib import Path as P
+        from contentforge.pipelines.base import dump_front_matter
+        self.d = P(tempfile.mkdtemp())
+        for sub in ("registry", "kbmeta", "content", "runs"):
+            (self.d / sub).mkdir()
+        self.facts = [
+            {"id": "F-017", "cat": "market_data",
+             "claim": "2024 年全球 PCB 产值：约 735 亿美元",
+             "source": "Prismark", "year": 2024,
+             "numbers": [{"n": 735, "u": "亿美元", "k": "strict"},
+                         {"n": 2024, "u": "年", "k": "year"}]},
+            {"id": "F-018", "cat": "market_data",
+             "claim": "2024 年中国大陆 PCB 产值：约 412.13 亿美元；占全球比重 56.1%",
+             "source": "Prismark", "year": 2024,
+             # claim 含「全球」（分母），显式 tags 锚定归属主体，避免 claim 扫描多标
+             "tags": {"scope": ["中国大陆"]},
+             "numbers": [{"n": 412.13, "u": "亿美元", "k": "strict"},
+                         {"n": 56.1, "u": "%", "k": "strict"},
+                         {"n": 2024, "u": "年", "k": "year"}]},
+        ]
+        (self.d / "registry" / "facts.json").write_text(
+            json.dumps({"facts": self.facts}, ensure_ascii=False), encoding="utf-8")
+        # 注意：「国内」故意不收进词表，作为未登录表述
+        subjects = {"dimensions": {"scope": {
+            "全球": ["全球", "世界"],
+            "中国大陆": ["中国大陆", "大陆", "中国"]}}}
+        (self.d / "kbmeta" / "subjects.json").write_text(
+            json.dumps(subjects, ensure_ascii=False), encoding="utf-8")
+        self.ws = {"dir": str(self.d), "name": "t", "kb_path": str(self.d)}
+
+        meta = {"id": "C-0001", "format": "data_article", "title": "测试",
+                "status": "generated", "facts": ["F-017", "F-018"],
+                "checks": {"fact": "pending", "geo": "pending"}}
+        self.item_path = self.d / "content" / "C-0001.md"
+        self._meta = meta
+        self._dump = dump_front_matter
+
+    def _write_item(self, body):
+        self.item_path.write_text(self._dump(self._meta) + "\n\n" + body, encoding="utf-8")
+
+    def _check(self, body, chat_json_fn):
+        from contentforge.checks.fact_checker import check_item
+        self._write_item(body)
+        item = {"meta": self._meta, "body": body}
+        return check_item(item, self.ws, llm_assist=True,
+                          chat_json_fn=chat_json_fn, threshold=0.9)
+
+    # ---------- chat_json ----------
+    def test_chat_json_strips_fence_and_parses(self):
+        from unittest.mock import patch
+        from contentforge import llm
+        with patch.object(llm, "chat", return_value='```json\n{"canonical": "全球"}\n```'):
+            self.assertEqual(llm.chat_json({"model": "x"}, []), {"canonical": "全球"})
+
+    # ---------- 主体归类 ----------
+    def test_classify_hit_passes_deterministic_gate(self):
+        fn = lambda ms: {"phrase": "国内", "canonical": "全球",
+                         "new_alias": None, "confidence": 0.95, "reason": "同义"}
+        r = self._check("2024 年国内 PCB 产值约 735 亿美元〔F-017〕", fn)
+        self.assertEqual(r["failures"], [])
+        self.assertTrue(any(w["rule"] == "classify:hit" for w in r["warnings"]))
+
+    def test_classify_wrong_mapping_still_fails(self):
+        """LLM 把「国内」硬归成全球，但事实 F-018 归属大陆 → 确定性闸必须仍 FAIL。"""
+        fn = lambda ms: {"phrase": "国内", "canonical": "全球",
+                         "new_alias": None, "confidence": 0.99, "reason": "乱归"}
+        r = self._check("2024 年国内 PCB 产值约 412.13 亿美元〔F-018〕", fn)
+        self.assertIn("anchor:subject", [f["rule"] for f in r["failures"]])
+
+    def test_classify_new_subject_goes_to_queue_and_fails(self):
+        fn = lambda ms: {"phrase": "国内", "canonical": None,
+                         "new_alias": "国内市场", "label": "国内市场", "confidence": 0.9}
+        r = self._check("2024 年国内 PCB 产值约 735 亿美元〔F-017〕", fn)
+        self.assertTrue(any(f["rule"] == "anchor:subject-missing" for f in r["failures"]))
+        sug = json.loads((self.d / "kbmeta" / "subjects_suggestions.json")
+                         .read_text(encoding="utf-8"))
+        self.assertEqual(len(sug["suggestions"]), 1)
+        self.assertEqual(sug["suggestions"][0]["fid"], "F-017")
+
+    def test_classify_bad_json_fails_closed(self):
+        def fn(ms):
+            raise ValueError("不是 JSON")
+        r = self._check("2024 年国内 PCB 产值约 735 亿美元〔F-017〕", fn)
+        self.assertTrue(any(f["rule"] == "anchor:subject-missing" for f in r["failures"]))
+        self.assertTrue(any(w["rule"] == "classify:reject" for w in r["warnings"]))
+
+    def test_classify_cache_avoids_second_llm_call(self):
+        calls = []
+
+        def fn(ms):
+            calls.append(1)
+            return {"phrase": "国内", "canonical": "全球", "confidence": 0.95}
+        body = "2024 年国内 PCB 产值约 735 亿美元〔F-017〕"
+        self._check(body, fn)
+        self._check(body, fn)
+        self.assertEqual(len(calls), 1)
+
+    # ---------- 回炉修复 ----------
+    BODY_BARE = "2024 年全球 PCB 产值约 735 亿美元〔F-017〕，大陆占比约 56.1%。\n"
+    BODY_FIXED = ("2024 年全球 PCB 产值约 735 亿美元〔F-017〕，"
+                  "其中中国大陆占 56.1%〔F-018〕。\n")
+
+    def test_repair_success_overwrites_and_audits(self):
+        from contentforge.repair import repair_item
+        self._write_item(self.BODY_BARE)
+        r = repair_item(self.ws, self.item_path, max_rounds=1,
+                        chat_fn=lambda ms, t=0.2: self.BODY_FIXED,
+                        use_classify=False, save_report=False)
+        self.assertEqual(r["outcome"], "fixed")
+        text = self.item_path.read_text(encoding="utf-8")
+        self.assertIn("〔F-018〕", text)
+        self.assertEqual(r["audits"][-1]["outcome"], "fixed")
+        self.assertEqual(r["report"]["fact"]["failures"], [])
+
+    def test_repair_still_failing_keeps_original_and_saves_draft(self):
+        from contentforge.repair import repair_item
+        self._write_item(self.BODY_BARE)
+        r = repair_item(self.ws, self.item_path,
+                        chat_fn=lambda ms, t=0.2: self.BODY_BARE,
+                        use_classify=False, save_report=False)
+        self.assertEqual(r["outcome"], "still_failing")
+        self.assertIn("大陆占比约 56.1%。", self.item_path.read_text(encoding="utf-8"))
+        self.assertTrue(Path(r["draft_path"]).exists())
+
+    def test_repair_llm_error_keeps_original(self):
+        from contentforge.repair import repair_item
+        self._write_item(self.BODY_BARE)
+
+        def boom(ms, t=0.2):
+            raise RuntimeError("api down")
+        r = repair_item(self.ws, self.item_path, chat_fn=boom,
+                        use_classify=False, save_report=False)
+        self.assertEqual(r["outcome"], "llm_error")
+        self.assertIn("大陆占比约 56.1%。", self.item_path.read_text(encoding="utf-8"))
+        self.assertEqual(r["audits"][-1]["error"][:11], "api down")
+
+    def test_repair_regression_fixing_one_breaking_another_fails(self):
+        """修复稿把原本合规的锚点改坏 → 全量复验必须 FAIL，不得覆盖原稿。"""
+        from contentforge.repair import repair_item
+        self._write_item(self.BODY_BARE)
+        bad_fix = "2024 年中国大陆 PCB 产值约 735 亿美元〔F-017〕，其中大陆占 56.1%〔F-018〕。\n"
+        r = repair_item(self.ws, self.item_path, chat_fn=lambda ms, t=0.2: bad_fix,
+                        use_classify=False, save_report=False)
+        self.assertEqual(r["outcome"], "still_failing")
+        self.assertIn("大陆占比约 56.1%。", self.item_path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

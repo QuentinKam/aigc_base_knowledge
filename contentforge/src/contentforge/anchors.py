@@ -32,6 +32,7 @@ class Tagger:
     """按维度组织的实体词表；别名最长匹配、命中区间不重叠。"""
 
     def __init__(self, dimensions: dict):
+        self.dimensions = dimensions
         # [(dim, canonical, alias)]，别名长的优先
         self.entries = []
         for dim, groups in dimensions.items():
@@ -39,6 +40,21 @@ class Tagger:
                 for alias in aliases:
                     self.entries.append((dim, canonical, alias))
         self.entries.sort(key=lambda e: -len(e[2]))
+
+    def with_aliases(self, dim: str, mapping: dict) -> "Tagger":
+        """返回注入临时别名的新 Tagger（LLM 归类经确定性闸复验前的一次性词表）。
+
+        mapping = {canonical: [新别名, ...]}；canonical 不存在时也可新建标签组。
+        """
+        newdims = {d: {c: list(a) for c, a in groups.items()}
+                   for d, groups in self.dimensions.items()}
+        newdims.setdefault(dim, {})
+        for canonical, phrases in mapping.items():
+            newdims[dim].setdefault(canonical, [])
+            for p in phrases:
+                if p and p not in newdims[dim][canonical]:
+                    newdims[dim][canonical].append(p)
+        return Tagger(newdims)
 
     def scan(self, text: str) -> dict:
         """返回 {dim: {canonical, ...}}，命中区间不重叠（先到先得）。"""
@@ -59,12 +75,19 @@ class Tagger:
         return out
 
 
-def load_tagger(ws) -> Tagger:
-    p = Path(ws["dir"]) / "kbmeta" / "subjects.json"
+def _subjects_path(ws) -> Path:
+    return Path(ws["dir"]) / "kbmeta" / "subjects.json"
+
+
+def load_dimensions(ws) -> dict:
+    p = _subjects_path(ws)
     if not p.exists():
-        return Tagger({})
-    data = json.loads(p.read_text(encoding="utf-8"))
-    return Tagger(data.get("dimensions", {}))
+        return {}
+    return json.loads(p.read_text(encoding="utf-8")).get("dimensions", {})
+
+
+def load_tagger(ws) -> Tagger:
+    return Tagger(load_dimensions(ws))
 
 
 def fact_tags(fact: dict, tagger: Tagger) -> dict:
@@ -104,13 +127,17 @@ def _fail(failures, rule, msg, line, snippet, fid=None, num=None):
 
 
 def verify_body(body: str, facts: list, tagger: Tagger,
-                skip_lines: set = None, allowed_ids: set = None) -> dict:
+                skip_lines: set = None, allowed_ids: set = None,
+                extra_aliases: dict = None) -> dict:
     """对正文做锚点验签。
 
     返回 {anchored, failures, warnings, matched_ids}。
     - 全文（非豁免区）无锚点 → anchored=False，调用方走旧版裸值规则。
     - 有锚点 → 契约模式：未挂锚点的严格数字一律 FAIL。
+    - extra_aliases：{canonical: [别名]} 临时并入 scope 词表（LLM 归类复验用，不落盘）。
     """
+    if extra_aliases:
+        tagger = tagger.with_aliases("scope", extra_aliases)
     skip_lines = skip_lines or set()
     facts_map = {f["id"]: f for f in facts}
     tag_cache = {f["id"]: fact_tags(f, tagger) for f in facts}
@@ -206,9 +233,11 @@ def verify_body(body: str, facts: list, tagger: Tagger,
             if fact_scope:
                 effective_scope = clause_scope or ({para_scope} if para_scope else set())
                 if not effective_scope:
-                    _fail(failures, "anchor:subject-missing",
-                          f"无法确认数据句主体（未登录主体表述 FAIL-closed，转人工/LLM 归类）；{fid} 主体为 {'/'.join(sorted(fact_scope))}",
-                          i, text, fid)
+                    rec = {"rule": "anchor:subject-missing",
+                           "msg": f"无法确认数据句主体（未登录主体表述 FAIL-closed，转人工/LLM 归类）；{fid} 主体为 {'/'.join(sorted(fact_scope))}",
+                           "line": i, "snippet": text[:60], "fid": fid,
+                           "clause": text}
+                    failures.append(rec)
                 else:
                     for s in effective_scope:
                         if s not in fact_scope:

@@ -84,6 +84,14 @@ def cmd_generate(args):
             report = checks.run_checks(ws, path)
             print(checks.print_report(report))
             print(f"  → 已保存 {path}")
+            if getattr(args, "repair", False) and report["fact"]["failures"] \
+                    and report["fact"].get("mode") == "anchor":
+                from .repair import repair_item
+                rr = repair_item(ws, path, save_report=True)
+                print(f"  ↻ 回炉修复：{rr['outcome']}")
+                if rr.get("draft_path"):
+                    print(f"    修复稿：{rr['draft_path']}")
+                print(checks.print_report(rr["report"]))
             saved.append(path)
         print()
     print(f"完成：{len(saved)} 份物料")
@@ -154,25 +162,114 @@ def _default_formats(topic):
     return ["article", "video"]
 
 
+def _bind_chat_json(cfg):
+    from . import llm
+    return lambda messages: llm.chat_json(cfg, messages)
+
+
 def cmd_check(args):
     from .checks import consistency
     ws = load_workspace(args.workspace)
     wsdir = Path(ws["dir"])
+    chat_json_fn = None
+    if getattr(args, "llm_assist", False):
+        cfg = llm_config()
+        if not cfg["has_key"]:
+            raise SystemExit("--llm-assist 需要配置 API key（CF_API_KEY 或 llm.json）")
+        chat_json_fn = _bind_chat_json(cfg)
+        print("（已开启 LLM 归类辅助：仅用于未登录主体表述归类，最终裁决仍为确定性验签）")
     if args.id:
         path = wsdir / "content" / f"{args.id}.md"
         if not path.exists():
             raise SystemExit(f"物料不存在：{path}")
-        print(checks.print_report(checks.run_checks(ws, path)))
+        print(checks.print_report(checks.run_checks(
+            ws, path, llm_assist=bool(chat_json_fn), chat_json_fn=chat_json_fn,
+            model=llm_config().get("model", "") if chat_json_fn else "")))
         return
     items = [load_item(p) for p in sorted((wsdir / "content").glob("C-*.md"))]
     if not items:
         print("（无物料）")
         return
     for it in items:
-        report = checks.run_checks(ws, it["path"])
+        report = checks.run_checks(
+            ws, it["path"], llm_assist=bool(chat_json_fn), chat_json_fn=chat_json_fn,
+            model=llm_config().get("model", "") if chat_json_fn else "")
         print(checks.print_report(report) + "\n")
     creport = consistency.check_all(ws, items)
     print(consistency.render_matrix(creport))
+
+
+def cmd_repair(args):
+    """锚点违规回炉重生成：确定性验签失败 → LLM 修一轮 → 全量复验 → 通过才覆盖。"""
+    from .repair import repair_item
+    ws = load_workspace(args.workspace)
+    path = Path(ws["dir"]) / "content" / f"{args.id}.md"
+    if not path.exists():
+        raise SystemExit(f"物料不存在：{path}")
+    r = repair_item(ws, path, max_rounds=args.rounds,
+                    use_classify=not args.no_classify, save_report=True)
+    label = {"fixed": "✓ 已修复并通过全量验签",
+             "still_failing": "✗ 修复后仍未通过（原稿保留，修复稿见 runs/）",
+             "llm_error": "✗ LLM 调用异常（原稿保留）",
+             "nothing_to_repair": "— 没有可回炉的锚点违规（unknown/越权 ID 需人工处理）",
+             "not_contract": "— 非锚点契约稿件（旧版物料不支持自动回炉）"}[r["outcome"]]
+    print(f"修复结果：{label}")
+    for a in r["audits"][-3:]:
+        print(f"  轮次 {a['round']}｜{a['outcome']}｜失败 {a['failures_before']}→{a['failures_after']}"
+              f"｜{','.join(a['rules'])}｜{a.get('model', '')}")
+    if r.get("draft_path"):
+        print(f"  修复稿：{r['draft_path']}")
+    print()
+    print(checks.print_report(r["report"]))
+
+
+def cmd_subjects(args):
+    """未登录地域主体审批队列：cf subjects <ws> 列表 / --approve S-0001 --into 中国大陆。"""
+    from .checks import classify as cl
+    ws = load_workspace(args.workspace)
+    wsdir = Path(ws["dir"])
+    sug_path = wsdir / cl.SUGGEST_PATH
+    data = registry.load_json(sug_path.parent, sug_path.name, {"suggestions": []})
+    pending = [s for s in data["suggestions"] if s.get("status") == "pending"]
+
+    if not args.approve:
+        if not pending:
+            print("（无待审批的主体归类建议）")
+            return
+        for s in pending:
+            print(f"{s['id']}  {s['ts']}  「{s['phrase']}」建议新标签「{s.get('label', s['new_alias'])}」"
+                  f"（{s['fid']}，conf={s.get('confidence', '-')}）")
+            print(f"    分句：{s['clause'][:70]}")
+        print("\n审批：cf subjects <ws> --approve S-0001 --into 中国大陆（并入现有标签）")
+        print("      cf subjects <ws> --approve S-0001 --new-canonical 长三角（新建标签）")
+        return
+
+    target = next((s for s in pending if s["id"] == args.approve), None)
+    if not target:
+        raise SystemExit(f"待审批建议不存在：{args.approve}")
+    if bool(args.into) == bool(args.new_canonical):
+        raise SystemExit("必须且只能指定 --into <现有canonical> 或 --new-canonical <新标签名>")
+
+    subj_path = wsdir / "kbmeta" / "subjects.json"
+    subj = registry.load_json(subj_path.parent, subj_path.name, {"dimensions": {}})
+    scope = subj["dimensions"].setdefault("scope", {})
+    canonical = args.into or args.new_canonical
+    if args.into and canonical not in scope:
+        raise SystemExit(f"现有标签不存在：{canonical}；可选：{', '.join(scope)}")
+    scope.setdefault(canonical, [])
+    for phrase in {target["phrase"], target.get("new_alias")}:
+        if phrase and phrase not in scope[canonical]:
+            scope[canonical].append(phrase)
+    subj_path.write_text(json.dumps(subj, ensure_ascii=False, indent=1), encoding="utf-8")
+
+    for s in data["suggestions"]:
+        if s["id"] == target["id"]:
+            s["status"] = "approved"
+            s["approved_ts"] = date.today().isoformat()
+            s["canonical"] = canonical
+    sug_path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    # 词表变更后归类缓存自动失效（缓存按词表哈希校验）
+    print(f"✓ {target['id']}：「{target['phrase']}」→ {canonical}，重跑 check 即生效")
 
 
 def cmd_approve(args):
@@ -276,9 +373,22 @@ def main(argv=None) -> int:
     g.add_argument("--dir", help="按 kb 目录前缀过滤选题（如 03_选型与采购）")
     p.add_argument("--formats", help="逗号分隔，如 faq_page,article,video")
     p.add_argument("--llm", action="store_true")
+    p.add_argument("--repair", action="store_true",
+                   help="锚点验签失败时自动回炉重生成 1 轮（需 --llm）")
     p.set_defaults(fn=cmd_generate)
     p = sub.add_parser("check");    p.add_argument("workspace"); p.add_argument("--id")
+    p.add_argument("--llm-assist", action="store_true",
+                   help="开启未登录主体表述的 LLM 归类（裁决仍是确定性验签）")
     p.set_defaults(fn=cmd_check)
+    p = sub.add_parser("repair");   p.add_argument("workspace"); p.add_argument("--id", required=True)
+    p.add_argument("--rounds", type=int, default=1, help="回炉轮数上限（默认 1）")
+    p.add_argument("--no-classify", action="store_true", help="修复复验时关闭主体 LLM 归类")
+    p.set_defaults(fn=cmd_repair)
+    p = sub.add_parser("subjects"); p.add_argument("workspace")
+    p.add_argument("--approve", help="审批建议 ID，如 S-0001")
+    p.add_argument("--into", help="并入现有 canonical 标签（与 --new-canonical 二选一）")
+    p.add_argument("--new-canonical", help="新建 canonical 标签（与 --into 二选一）")
+    p.set_defaults(fn=cmd_subjects)
     p = sub.add_parser("approve");  p.add_argument("workspace"); p.add_argument("--id", required=True)
     p.set_defaults(fn=cmd_approve)
     p = sub.add_parser("export");   p.add_argument("workspace"); p.add_argument("--id")

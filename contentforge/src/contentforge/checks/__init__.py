@@ -5,13 +5,17 @@ from pathlib import Path
 from . import fact_checker, geo_checker, consistency
 
 
-def run_checks(ws, item_path: Path, save_report: bool = True) -> dict:
+def run_checks(ws, item_path: Path, save_report: bool = True,
+               llm_assist: bool = False, chat_json_fn=None,
+               threshold: float = 0.9, model: str = "") -> dict:
     """对单份物料跑 fact + geo 检查，更新状态机与检查报告。"""
     from ..pipelines.base import load_item, update_item
     from ..registry import build_check_index
 
     item = load_item(item_path)
-    fact_r = fact_checker.check_item(item, ws)
+    fact_r = fact_checker.check_item(item, ws, llm_assist=llm_assist,
+                                     chat_json_fn=chat_json_fn,
+                                     threshold=threshold, model=model)
     geo_r = geo_checker.check_item(item, ws)
 
     checks = {"fact": "pass" if not fact_r["failures"] else "fail",

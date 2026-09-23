@@ -5,8 +5,11 @@
 默认指向智谱开放平台（OpenAI 兼容端点），可换任意兼容服务。
 """
 import json
+import re
 import time
 import urllib.request
+
+_JSON_FENCE_RE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.S)
 
 
 def chat(cfg: dict, messages: list, temperature: float = 0.6,
@@ -31,6 +34,26 @@ def chat(cfg: dict, messages: list, temperature: float = 0.6,
             if attempt < retries:
                 time.sleep(2 * (attempt + 1))
     raise RuntimeError(f"LLM 调用失败（{cfg['model']}）：{last_err}")
+
+
+def chat_json(cfg: dict, messages: list, temperature: float = 0.0,
+              timeout: int = 180, retries: int = 1) -> dict:
+    """要求模型只输出 JSON 时用：剥 ```json 围栏，解析失败整体重试一次。
+
+    最终仍非法时抛 ValueError（调用方一律 fail-closed，禁止猜默认值）。
+    注意：这是「结构化生成」辅助，不用于 pass/fail 裁决——裁决权在确定性检查器。
+    """
+    last_err, text = None, ""
+    for _ in range(retries + 1):
+        text = chat(cfg, messages, temperature=temperature, timeout=timeout, retries=0).strip()
+        m = _JSON_FENCE_RE.match(text)
+        if m:
+            text = m.group(1).strip()
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as e:
+            last_err = e
+    raise ValueError(f"LLM 返回不是合法 JSON（{last_err}），原文前 120 字：{text[:120]}")
 
 
 def chat_stream(cfg: dict, messages: list, temperature: float = 0.6,
