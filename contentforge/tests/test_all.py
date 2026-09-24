@@ -231,6 +231,20 @@ class TestAnchorVerification(unittest.TestCase):
         self.assertIn("（来源：Prismark / 艾媒咨询转引，2024）", out)
         self.assertNotIn("〔", out)
 
+    def test_adjacent_metric_merge_clause_vs_fact(self):
+        """「产值增速」分句侧只保留中心语增速；事实侧保留全部指标。"""
+        self.assertEqual(self.tagger.scan("产值增速约 29%")["metric"], {"增速"})
+        self.assertEqual(self.tagger.scan("产值增速", adjacent_merge=False)["metric"],
+                         {"增速", "产值规模"})
+
+    def test_number_level_scope_blocks_cross_region_value(self):
+        """F-131 一条事实多组地区↔数值：日本配美洲的 7.5% 必须 FAIL，日本配 11.3% 通过。"""
+        self.allowed.add("F-131")
+        bad = self.verify("2025 年日本产值增速约 7.5%〔F-131〕")
+        good = self.verify("2025 年日本产值增速约 11.3%〔F-131〕")
+        self.assertIn("anchor:subject", self.rules(bad))
+        self.assertEqual(good["failures"], [])
+
     def test_check_item_contract_mode_blocks_chetao_case(self):
         from contentforge.checks.fact_checker import check_item
         item = {"body": "2024 年中国大陆 PCB 产值约 735 亿美元〔F-017〕",

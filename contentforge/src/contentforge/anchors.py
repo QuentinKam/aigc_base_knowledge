@@ -56,10 +56,17 @@ class Tagger:
                     newdims[dim][canonical].append(p)
         return Tagger(newdims)
 
-    def scan(self, text: str) -> dict:
-        """返回 {dim: {canonical, ...}}，命中区间不重叠（先到先得）。"""
-        masked = list(text)
-        out: dict[str, set] = {}
+    def scan(self, text: str, adjacent_merge: bool = True) -> dict:
+        """返回 {dim: {canonical, ...}}。
+
+        规则：命中区间不重叠（长别名优先）。adjacent_merge=True（分句侧默认）时，
+        同一维度内相邻命中按中文左修饰结构合并——「产值增速」「产值占比」中心语
+        在右，只保留右侧标签，避免复合词把两个 metric 标签同时打到分句上造成误杀。
+        事实侧扫描必须传 False：一条事实可合法承载多个指标
+        （「占比 56.1%（约 412.13 亿美元）」= 占比份额+产值规模）。
+        跨维度相邻（如「汽车产值」=segment+metric）始终各自保留。
+        """
+        hits = []   # (start, end, dim, canonical)
         for dim, canonical, alias in self.entries:
             start = 0
             while True:
@@ -67,11 +74,34 @@ class Tagger:
                 if i < 0:
                     break
                 start = i + len(alias)
-                if any(masked[j] == "␣" for j in range(i, start)):
-                    continue
-                for j in range(i, start):
-                    masked[j] = "␣"
-                out.setdefault(dim, set()).add(canonical)
+                hits.append((i, i + len(alias), dim, canonical))
+        # 长别名优先占位；同长按词典序（确定性）
+        hits.sort(key=lambda h: (-(h[1] - h[0]), h[0], h[2]))
+        occupied = []
+        kept = []
+        for h in hits:
+            if any(not (h[1] <= s or h[0] >= e) for s, e in occupied):
+                continue
+            occupied.append((h[0], h[1]))
+            kept.append(h)
+        # 同维度相邻合并（仅分句侧）：左邻是修饰语，丢弃保留右侧中心语（迭代到稳定）
+        if adjacent_merge:
+            changed = True
+            while changed:
+                changed = False
+                kept.sort(key=lambda h: h[0])
+                for a_i in range(len(kept)):
+                    for b_i in range(a_i + 1, len(kept)):
+                        a, b = kept[a_i], kept[b_i]
+                        if a[2] == b[2] and a[1] == b[0]:
+                            kept.pop(a_i)
+                            changed = True
+                            break
+                    if changed:
+                        break
+        out: dict[str, set] = {}
+        for _, _, dim, canonical in kept:
+            out.setdefault(dim, set()).add(canonical)
         return out
 
 
@@ -91,10 +121,10 @@ def load_tagger(ws) -> Tagger:
 
 
 def fact_tags(fact: dict, tagger: Tagger) -> dict:
-    """事实的实体标签：显式 tags 覆盖，否则扫描 claim。返回 {dim: {canonical}}。"""
+    """事实的实体标签：显式 tags 覆盖，否则扫描 claim（不做相邻合并——事实可含多指标）。"""
     if fact.get("tags"):
         return {dim: set(v) for dim, v in fact["tags"].items()}
-    return tagger.scan(fact.get("claim", ""))
+    return tagger.scan(fact.get("claim", ""), adjacent_merge=False)
 
 
 def fact_value_set(fact: dict) -> set:
@@ -143,6 +173,14 @@ def verify_body(body: str, facts: list, tagger: Tagger,
     tag_cache = {f["id"]: fact_tags(f, tagger) for f in facts}
     val_cache = {f["id"]: fact_value_set(f) for f in facts}
     year_cache = {f["id"]: fact_years(f) for f in facts}
+    # 数值级主体约束：(fid, (n,u)) → scope 集合（一条事实内含多组「地区↔数值」时用，如 F-131）
+    num_scope_cache = {}
+    for f in facts:
+        for n in f.get("numbers", []):
+            if n.get("scope"):
+                num_scope_cache.setdefault(
+                    f["id"], {}).setdefault(
+                    (round(n["n"], 4), n["u"]), set()).add(n["scope"])
 
     failures, warnings_, matched = [], [], set()
 
@@ -208,13 +246,17 @@ def verify_body(body: str, facts: list, tagger: Tagger,
 
             fvals, fyears, ftags = val_cache[fid], year_cache[fid], tag_cache[fid]
             n_fail_before = len(failures)
+            matched_num_scopes: set = set()   # 本分句命中的数值自带的主体约束
 
             # 1) 数值 + 单位必须在所挂事实内
             for a in strict:
-                if (round(a["num"], 4), a["unit"]) not in fvals:
+                key = (round(a["num"], 4), a["unit"])
+                if key not in fvals:
                     _fail(failures, "anchor:value",
                           f"「{a['raw'].strip()}」与 {fid} 的数值/单位不符（值对但挂错 ID 也在此拦截）",
                           i, text, fid, num=a["num"])
+                else:
+                    matched_num_scopes |= num_scope_cache.get(fid, {}).get(key, set())
 
             # 2) 年份：事实有年份则分句或同段前文必须出现；分句年份不得越界
             if fyears:
@@ -228,7 +270,8 @@ def verify_body(body: str, facts: list, tagger: Tagger,
                     _fail(failures, "anchor:year",
                           f"分句年份 {y} 与 {fid}（{sorted(fyears)}）不符", i, text, fid)
 
-            # 3) 主体（scope）：必须能确认，且与事实主体一致；同段前文可继承
+            # 3) 主体（scope）：必须能确认，且与事实主体一致；同段前文可继承。
+            #    若命中的具体数值自带 scope（一事实多组地区↔数值），约束细化到数值级。
             fact_scope = ftags.get("scope", set())
             if fact_scope:
                 effective_scope = clause_scope or ({para_scope} if para_scope else set())
@@ -239,10 +282,13 @@ def verify_body(body: str, facts: list, tagger: Tagger,
                            "clause": text}
                     failures.append(rec)
                 else:
+                    allowed_scope = matched_num_scopes or fact_scope
+                    scope_label = '/'.join(sorted(matched_num_scopes)) if matched_num_scopes \
+                        else '/'.join(sorted(fact_scope))
                     for s in effective_scope:
-                        if s not in fact_scope:
+                        if s not in allowed_scope:
                             _fail(failures, "anchor:subject",
-                                  f"主体不一致：分句主体「{s}」≠ {fid} 事实主体「{'/'.join(sorted(fact_scope))}」",
+                                  f"主体不一致：分句主体「{s}」≠ {fid} 该数值主体「{scope_label}」",
                                   i, text, fid)
 
             # 4) 细分品类 / 指标：分句明示的标签必须是事实标签的子集
