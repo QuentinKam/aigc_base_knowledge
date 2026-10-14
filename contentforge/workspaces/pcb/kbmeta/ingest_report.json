@@ -1,11 +1,11 @@
 {
- "generated_at": "2026-09-11",
- "kb_path": "/Users/quentingam/Documents/PCB_ALL/pcb_knowledge_base",
+ "generated_at": "2026-10-15",
+ "kb_path": "/Users/quentingam/Documents/Projects/products/PCB_ALL/pcb_knowledge_base",
  "diff": {
   "files": {
    "added": [],
    "modified": [
-    "01_行业基础/制造工艺流程.md"
+    "TODO.md"
    ],
    "removed": []
   },

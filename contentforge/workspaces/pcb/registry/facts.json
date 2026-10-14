@@ -1,6 +1,6 @@
 {
- "generated_at": "2026-09-11",
- "kb_path": "/Users/quentingam/Documents/PCB_ALL/pcb_knowledge_base",
+ "generated_at": "2026-10-15",
+ "kb_path": "/Users/quentingam/Documents/Projects/products/PCB_ALL/pcb_knowledge_base",
  "facts": [
   {
    "id": "F-001",
@@ -3158,32 +3158,27 @@
     {
      "n": 19.2,
      "u": "%",
-     "k": "strict",
-     "scope": "中国大陆"
+     "k": "strict"
     },
     {
      "n": 13.8,
      "u": "%",
-     "k": "strict",
-     "scope": "欧洲"
+     "k": "strict"
     },
     {
      "n": 11.3,
      "u": "%",
-     "k": "strict",
-     "scope": "日本"
+     "k": "strict"
     },
     {
      "n": 11.8,
      "u": "%",
-     "k": "strict",
-     "scope": "亚洲其他"
+     "k": "strict"
     },
     {
      "n": 7.5,
      "u": "%",
-     "k": "strict",
-     "scope": "美洲"
+     "k": "strict"
     },
     {
      "n": 2025.0,
@@ -5477,7 +5472,7 @@
     }
    ],
    "first_seen": "2026-09-11",
-   "superseded_at": "2026-09-11",
+   "superseded_at": "2026-10-15",
    "supersede_reason": "removed_from_kb"
   }
  ]

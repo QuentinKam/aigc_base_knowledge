@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-09-11",
+ "generated_at": "2026-10-15",
  "topics": [
   {
    "id": "T-001",
@@ -1946,7 +1946,7 @@
    ],
    "angle": "\"PCB 上过回流焊就翘板，怎么回事？\"等故障场景问答（需补充品牌技术案例）",
    "status": "ready",
-   "superseded_at": "2026-09-11",
+   "superseded_at": "2026-10-15",
    "supersede_reason": "removed_from_topic_pool"
   }
  ],
